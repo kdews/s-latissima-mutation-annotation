@@ -1,13 +1,14 @@
 # Mutation annotation of the brown macroalgae *Saccharina latissima* (North American sugar kelp)
-A pipeline to detect deleterious mutations in *S. latissima* WGS data
+A pipeline to detect and annotate the effects of deleterious mutations in *S. latissima* whole genome sequencing data.
 
-## Getting started
-### Rename original FASTQ files to have less metadata
+## The pipeline
+### 1. Rename original FASTQ files to have less metadata
 In the directory containing FASTQ files, run:
 ```
-python3 rename_MO_KD.py
+python rename_MO_KD.py
 ```
 
+### 2. Align reads to *de novo* assembled *S. latissima* transcriptome
 
 ## Optional: Annotation of contaminants in WGS reads with BBDuk and BLAST
 The transcriptome and genome that we're using have been decontaminated, but to detect and annotate contaminating reads (e.g. bacteria, fungi, viruses) in *S. latissima* DNA reads, run:

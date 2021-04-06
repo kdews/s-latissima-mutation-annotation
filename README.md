@@ -15,10 +15,11 @@ The transcriptome and genome that we're using have been decontaminated, but to d
 ```
 mkdir bbduk
 for i in $sample_ids; echo $i; sbatch -J $i -o bbduk/$i.bbduk.out bbduk_submit.sh $i; done
+
 mkdir blast
 for i in $sample_ids; echo $i; sbatch -J $i -o blast/$i.convert.out fastq_convert.sh $i; done
+
 for i in $sample_ids; echo $i; sbatch -J $i -o blast/$i.blast_1.out blast_submit_1.sh $i; done
 for i in $sample_ids; echo $i; sbatch -J $i -o blast/$i.blast_2.out blast_submit_2.sh $i; done
 ```
-
 

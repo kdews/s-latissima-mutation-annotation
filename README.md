@@ -1,4 +1,2 @@
-# The largest heading
-## The second largest heading
-###### The smallest heading
+# Mutation annotation of the brown macroalgae *Saccharina latissima* (North American sugar kelp)
 

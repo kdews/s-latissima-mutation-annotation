@@ -1,6 +1,5 @@
-# Takes a CDS coordinate file (format: contig_id, first coord., last coord., strand, protein_id),
-# a transcriptome or genome FASTA file, and a VCF file (filtered for SNPs), and outputs effect of
-# SNPs in an annotated VCF file.
+# Takes VCF file (filtered for SNPs), CDS coordinate file (format: contig_id, first coord., last coord., strand,
+# protein_id), and transcriptome or genome FASTA file, and outputs effect of SNPs in annotated VCF file
 
 import sys
 import math
@@ -254,11 +253,11 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
 # CDS coordinate file
 coding_region_positions_file = sys.argv[1]
 # FASTA file
-fasta_file = sys.argv[2]
+#fasta_file = sys.argv[2]
 # VCF file
-vcf_file = sys.argv[3]
+#vcf_file = sys.argv[3]
 # save VCF name without extension for output filename
-vcf_file_no_ext = vcf_file.rsplit(".", 1)[0]
+#vcf_file_no_ext = vcf_file.rsplit(".", 1)[0]
 
 
 # PARSE INPUT #
@@ -273,6 +272,7 @@ cds_dict = {}
 for line in coords:
     cds_line = line.strip().split("\t")
     contig_id = cds_line[0]
+    print(contig_id)
     start_position = cds_line[1]
     end_position = cds_line[2]
     strand = cds_line[3]
@@ -280,82 +280,4 @@ for line in coords:
     cds_list = [start_position, end_position, strand, contig_id]
     cds_dict[protein] = cds_list
 
-# parse FASTA file
-seq_dict = readfasta(fasta_file)
 
-# parse VCF file
-g = open(vcf_file, "r")
-vcf = g.readlines()
-g.close()
-
-
-# DEFINE OUTPUT FILE #
-# open output annotated VCF file
-out_vcf = open(vcf_file_no_ext + ".annot.vcf", "w")
-
-
-# VCF ANNOTATION PIPELINE #
-# create counters to save coding SNP statistics
-snp = 0
-coding = 0
-non_cod = 0
-pos = 0
-neg = 0
-first = 0
-second = 0
-third = 0
-silent = 0
-nonsense = 0
-nonsynon = 0
-# begin annotating by iterating through input VCF and saving each line to output
-for line in vcf:
-    # save header lines to output VCF file without editing
-    if line.lstrip().startswith("#"):
-        out_vcf.write(line)
-        continue
-    # split non-header lines of VCF file into a list + named components
-    else:
-        snp += 1
-        vcf_line = line.strip().split("\t")
-        vcf_contig_id = vcf_line[0]
-        vcf_snp_position = int(vcf_line[1])
-        vcf_ref_base = vcf_line[3]
-        vcf_alt_base = vcf_line[4]
-        if not any(vcf_contig_id in s for s in cds_dict.keys()):
-            write_non_coding_line(vcf_line, out_vcf)
-        # verify that contig has CDS
-        else:
-            protein_list = [s for s in cds_dict.keys() if vcf_contig_id in s]
-            for protein in protein_list:
-                # verify that SNP position is within a CDS
-                if int(vcf_snp_position) < int(cds_dict[protein][0]):
-                    # annotate non-coding mutations
-                    write_non_coding_line(vcf_line, out_vcf)
-                else:
-                    if int(vcf_snp_position) > int(cds_dict[protein][1]):
-                        # annotate non-coding mutations
-                        write_non_coding_line(vcf_line, out_vcf)
-                    else:
-                        write_coding_line(codon_dict, cds_dict, seq_dict,
-                                          protein, vcf_contig_id,
-                                          vcf_snp_position, vcf_alt_base,
-                                          vcf_line, out_vcf)
-
-
-# close output VCF file
-out_vcf.close()
-# print SNP statistics to stdout
-print("SNP Statistics" + "\n\n" +
-      "Total SNPs: " + str(snp) + "\n" +
-      "Non-coding: " + str(non_cod) + "\n" +
-      "Coding: " + str(coding) + "\n" +
-      "% Coding: " + str(round(coding/(non_cod+coding)*100, 2)) + "%\n\n" +
-      "Silent substitutions: " + str(silent) + "\n" +
-      "Nonsense (early stop) substitutions: " + str(nonsense) + "\n" +
-      "Non-synonymous substitutions: " + str(nonsynon) + "\n\n" +
-      "Positive strand: " + str(pos) + "\n" +
-      "Negative strand: " + str(neg) + "\n\n" +
-      "Position in codon:\n" +
-      "1st - " + str(first) + "\n" +
-      "2nd - " + str(second) + "\n" +
-      "3rd - " + str(third))

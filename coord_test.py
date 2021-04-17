@@ -2,23 +2,25 @@ coding_region_positions_file = "assembly_ST_collapse_with_short_genes.complete_O
 coding_region_positions_file_no_ext = coding_region_positions_file.rsplit('.', 1)[0]
 
 f=open(coding_region_positions_file,'r')
-lines=f.readlines()
+coords=f.readlines()
 f.close()
 
-contig_id_dict = {}
+coords=coords[1:5]
 
-
-for line in lines:
-    contig_line = line.strip().split(" ")[0]
-    contig_id = contig_line.split()[0]
-    start_position = contig_line.split()[1]
-    end_position = contig_line.split()[2]
-    strand = contig_line.split()[3]
-    contig_id_list = []
-    contig_id_list.append(start_position)
-    contig_id_list.append(end_position)
-    contig_id_list.append(strand)
-    print(contig_id_list)
-    contig_id_dict[contig_id] = contig_id_list    
-print(contig_id_dict)
+cds_dict = {}
+for line in coords:
+    cds_line = line.strip().split("\t")
+    print(cds_line)
+    contig_id = cds_line[0]
+    print(contig_id)
+    start_position = cds_line[1]
+    print(start_position)
+    end_position = cds_line[2]
+    print(end_position)
+    strand = cds_line[3]
+    print(strand)
+    protein = cds_line[4]
+    print(protein)
+    cds_list = [start_position, end_position, strand, contig_id]
+    cds_dict[protein] = cds_list
 

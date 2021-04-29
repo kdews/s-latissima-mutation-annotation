@@ -35,18 +35,6 @@ codon_dict = {
     "TAC": "Y", "TAT": "Y", "TAA": "*", "TAG": "*",
     "TGC": "C", "TGT": "C", "TGA": "*", "TGG": "W"}
 
-# define amino acid dictionaries of volume and polarity
-all_amino_acids = ["G", "P", "A", "V", "L", "I", "M", "C", "F", "Y",
-                   "W", "H", "K", "R", "Q", "N", "E", "D", "S", "T"]
-high_vol = ["L", "I", "F", "M", "Y", "W", "H", "K", "R", "E", "Q"]
-low_vol = [AA for AA in all_amino_acids if AA not in high_vol]
-polar = ["Y", "W", "H", "K", "R", "E", "Q", "T", "D", "N", "S", "C"]
-nonpolar = [AA for AA in all_amino_acids if AA not in polar]
-volume_dict = dict.fromkeys(high_vol, "high volume")
-volume_dict.update(dict.fromkeys(low_vol, "low volume"))
-polarity_dict = dict.fromkeys(polar, "polar")
-polarity_dict.update(dict.fromkeys(nonpolar, "nonpolar"))
-
 
 def compbase(base):
     """Returns complement of base"""
@@ -129,15 +117,6 @@ def write_nonsynon_line(codon, alt_codon, codon_dict,
         VCF file (vcf_line), and an opened output VCF file (out_vcf), annotates
         the VCF line, and writes the annotated line to the output VCF
         (See: # DEFINE OUTPUT FILES #)"""
-    # annotate radical and conservative amino acid changes
-    if codon_dict[codon] == "*" or codon_dict[alt_codon] == "*":
-        sub_class = "CONSERVATIVE"
-        print("RECOGNIZED")
-    elif volume_dict[codon_dict[codon]] == volume_dict[codon_dict[alt_codon]] and \
-            polarity_dict[codon_dict[codon]] == polarity_dict[codon_dict[alt_codon]]:
-        sub_class = "CONSERVATIVE"
-    else:
-        sub_class = "RADICAL"
     # appends effect information to the VCF "INFO" field
     vcf_line[7] = vcf_line[7] + ";EFF=NON_SYNONYMOUS_CODING(MISSENSE|" + \
                   codon + "/" + alt_codon + "|" + \
@@ -146,7 +125,7 @@ def write_nonsynon_line(codon, alt_codon, codon_dict,
                   str(math.ceil((int(cds_dict[protein][1]) -
                                  int(cds_dict[protein][0])) / 3)) + "|" + \
                   vcf_contig_id + "|" + "CODING" + "|" + \
-                  cds_dict[protein][3] + "|" + sub_class + "|)"
+                  cds_dict[protein][3] + "|)"
     vcf_line = "\t".join(vcf_line)
     out_vcf.write(vcf_line + "\n")
 

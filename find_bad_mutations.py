@@ -365,12 +365,11 @@ for line in vcf:
         # verify that contig has CDS
         if any(vcf_contig_id in s for s in cds_dict.keys()):
             protein_list = [s for s in cds_dict.keys() if vcf_contig_id in s]
+            correct_protein = "none"
             for protein in protein_list:
                 # verify that SNP position is within a CDS
                 if int(cds_dict[protein][0]) <= int(vcf_snp_position) <= int(cds_dict[protein][1]):
                     correct_protein = protein
-                else:
-                    correct_protein = "none"
             if correct_protein != "none":
                 coding += 1
                 # write to VCF and return a list (snp_info) containing SNP position and effect information

@@ -1,3 +1,7 @@
+# Takes a CDS coordinate file (format: contig_id, first coord., last coord., strand, protein_id),
+# a transcriptome or genome FASTA file, and a VCF file (filtered for SNPs), and outputs effect of
+# SNPs in an annotated VCF file.
+import os
 import sys
 import math
 import gzip
@@ -5,13 +9,9 @@ from Bio import SeqIO
 
 # USAGE #
 if len(sys.argv) < 2 or sys.argv[1] == "-h":
-    print("\n-------------------------FIND DELETERIOUS MUTATIONS IN VARIATION DATA-------------------------\n\n"
-          "Takes a CDS coordinate file (format: contig_id, first coord., last coord., strand, protein_id), \n"
-          "a transcriptome or genome FASTA file, and a VCF file (filtered for SNPs), and outputs effect \n"
-          "of SNPs in an annotated VCF file (original filename + annot.vcf) with \"EFF=...\" appended to \n"
-          "the INFO column, as well as a summary statistics file (substitution_statistics.txt).\n\n" +
-          "Usage: python " + sys.argv[0] + " input.cds_coords input.fasta input.vcf" + "\n\n" +
-          "Requires: BioPython")
+    print("Usage: python " + sys.argv[0] + " input.cds_coords input.fasta input.vcf > substitution_statistics.txt" +
+           "\n" + "Returns input.annot.vcf with \"EFF=...\" appended to INFO column." + "\n" +
+           "\n" + "Requires: BioPython")
     sys.exit(0)
 
 
@@ -53,8 +53,7 @@ def compbase(base):
 
 def comp(seq):
     """Returns the complement of seq"""
-    # generate empty list
-    comp = []
+    comp = []  # generate empty list
     for base in seq:
         nuc = compbase(base)
         comp.append(nuc)
@@ -69,8 +68,7 @@ def readfasta(filename):
     fasta_dict = {}
     try:
         fasta = open(filename, "r")
-        # trying to read zipped file will produce an error
-        fasta.read()
+        fasta.read()  # trying to read zipped file will produce an error
         fasta.close()
     except:
         with gzip.open(filename, "rt") as reads:
@@ -84,26 +82,49 @@ def readfasta(filename):
 
 
 def write_non_coding_line(vcf_line, out_vcf):
-    """Takes a line of input VCF file (vcf_line) and an opened
-     output VCF file (out_vcf), annotates the VCF line, and
-     writes the annotated line to the output VCF
-     (See: # DEFINE OUTPUT FILES #)"""
-    # appends effect information to the VCF "INFO" field
+    """Takes a counter, a line of input VCF file (vcf_line),
+    and an opened output VCF file (out_vcf), and increments the counter,
+    annotates the VCF line, and writes the annotated line to the output VCF
+    (See: # DEFINE OUTPUT FILE #)"""
+    global non_cod
+    non_cod += 1
     vcf_line[7] = vcf_line[7] + ";EFF=NON_CODING"
     vcf_line = "\t".join(vcf_line)
     out_vcf.write(vcf_line + "\n")
 
 
-def write_synon_line(codon, alt_codon,
-                     vcf_line, out_vcf):
-    """Takes values for codon and alt_codon (in nucleic acid),
+def write_silent_line(codon, alt_codon,
+                      vcf_line, out_vcf):
+    """Takes a counter, values for codon and alt_codon (in nucleic acid),
     a line of input VCF file (vcf_line), and an opened output VCF file
-    (out_vcf), annotates the VCF line, and
+    (out_vcf), and increments the counter, annotates the VCF line, and
     writes the annotated line to the output VCF
-    (See: # DEFINE OUTPUT FILES #)"""
-    # appends effect information to the VCF "INFO" field
+    (See: # DEFINE OUTPUT FILE #)"""
     vcf_line[7] = vcf_line[7] + ";EFF=SYNONYMOUS(SILENT|" + \
                   codon + "/" + alt_codon + "|)"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
+
+
+def write_nonsense_line(codon, alt_codon, codon_dict,
+                        cds_dict, snp_pos_in_cds, protein,
+                        vcf_contig_id, vcf_line, out_vcf):
+    """Takes first, second, and third values, a counter,
+    values for codon and alt_codon (in nucleic acid),
+    a codon to amino acid dictionary (codon_dict),
+    a CDS dictionary (cds_dict), the position of the
+    SNP in the CDS (snp_pos_in_cds), a line of input
+    VCF file (vcf_line), and an opened output VCF file
+    (out_vcf), and increments the counter, annotates
+    the VCF line, and writes the annotated line to the output VCF
+    (See: # DEFINE OUTPUT FILE #)"""
+    vcf_line[7] = vcf_line[7] + ";EFF=STOP_GAINED(NONSENSE|" + \
+                  codon + "/" + alt_codon + "|" + \
+                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
+                  codon_dict[alt_codon] + "|" + \
+                  str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
+                  vcf_contig_id + "|" + "CODING" + "|" + \
+                  cds_dict[protein][3] + "|)"
     vcf_line = "\t".join(vcf_line)
     out_vcf.write(vcf_line + "\n")
 
@@ -111,13 +132,13 @@ def write_synon_line(codon, alt_codon,
 def write_nonsynon_line(codon, alt_codon, codon_dict,
                         cds_dict, snp_pos_in_cds, protein,
                         vcf_contig_id, vcf_line, out_vcf):
-    """Takes values for codon and alt_codon (in nucleic acid),
+    """Takes a counter, values for codon and alt_codon (in nucleic acid),
         a codon to amino acid dictionary (codon_dict), the position of the SNP
-        in the CDS (snp_pos_in_cds), a CDS dictionary (cds_dict), a line of input
-        VCF file (vcf_line), and an opened output VCF file (out_vcf), annotates
-        the VCF line, and writes the annotated line to the output VCF
-        (See: # DEFINE OUTPUT FILES #)"""
-    # appends effect information to the VCF "INFO" field
+        in the CDS (snp_pos_in_cds), a CDS dictionary (cds_dict),
+        a line of input VCF file (vcf_line), and an opened output VCF file
+        (out_vcf), and increments the counter, annotates the VCF line, and
+        writes the annotated line to the output VCF
+        (See: # DEFINE OUTPUT FILE #)"""
     vcf_line[7] = vcf_line[7] + ";EFF=NON_SYNONYMOUS_CODING(MISSENSE|" + \
                   codon + "/" + alt_codon + "|" + \
                   codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
@@ -130,46 +151,19 @@ def write_nonsynon_line(codon, alt_codon, codon_dict,
     out_vcf.write(vcf_line + "\n")
 
 
-def write_nonsense_line(codon, alt_codon, codon_dict,
-                        cds_dict, snp_pos_in_cds, protein,
-                        vcf_contig_id, vcf_line, out_vcf):
-    """Takes values for codon and alt_codon (in nucleic acid),
-    a codon to amino acid dictionary (codon_dict),
-    a CDS dictionary (cds_dict), the position of the
-    SNP in the CDS (snp_pos_in_cds), a line of input
-    VCF file (vcf_line), and an opened output VCF file
-    (out_vcf), annotates the VCF line, and writes
-    the annotated line to the output VCF
-    (See: # DEFINE OUTPUT FILES #)"""
-    # appends effect information to the VCF "INFO" field
-    vcf_line[7] = vcf_line[7] + ";EFF=STOP_GAINED(NONSENSE|" + \
-                  codon + "/" + alt_codon + "|" + \
-                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
-                  codon_dict[alt_codon] + "|" + \
-                  str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
-                  vcf_contig_id + "|" + "CODING" + "|" + \
-                  cds_dict[protein][3] + "|)"
-    vcf_line = "\t".join(vcf_line)
-    out_vcf.write(vcf_line + "\n")
-
-
 def write_coding_line(codon_dict, cds_dict, seq_dict,
                       protein, vcf_contig_id, vcf_snp_position,
                       vcf_alt_base, vcf_line, out_vcf):
-    """Takes values for a codon to amino acid dictionary (codon_dict),
-    a CDS dictionary (cds_dict), a line of input VCF file (vcf_line)
-    as well as its associated protein and contig IDs (protein, vcf_contig_id),
-    SNP position (vcf_snp_position) and alternative base call (vcf_alt_base),
-    and an opened output VCF file (out_vcf), annotates the VCF line, and writes
-    the annotated line to the output VCF
-    (See: # DEFINE OUTPUT FILES #)"""
-    snp_info = []
+    # define counters as global variables to increment
+    global coding, pos, neg, first, second, third, silent, nonsense, nonsynon
+    coding += 1
     # handles CDSs translated in forward direction
     if cds_dict[protein][2] == "+":
+        pos += 1
         # add 1 because subtracting sequences
         snp_pos_in_cds = vcf_snp_position - int(cds_dict[protein][0]) + 1
         if snp_pos_in_cds % 3 == 1:
-            snp_info.append("first")
+            first += 1
             # all positions must be corrected for Python numbering (starts at 0, so subtract 1)
             # reference codon sequence
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
@@ -180,7 +174,7 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
                         seq_dict[vcf_contig_id][vcf_snp_position] + \
                         seq_dict[vcf_contig_id][vcf_snp_position + 1]
         elif snp_pos_in_cds % 3 == 2:
-            snp_info.append("second")
+            second += 1
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position]
@@ -188,7 +182,8 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
                         vcf_alt_base + \
                         seq_dict[vcf_contig_id][vcf_snp_position]
         elif snp_pos_in_cds % 3 == 0:
-            snp_info.append("third")
+            global third
+            third += 1
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 3] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1]
@@ -196,14 +191,15 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
                         seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                         vcf_alt_base
         else:
-            print("Error calculating SNP position.")
+            print("broken")
     elif cds_dict[protein][2] == "-":
+        neg += 1
         # subtract SNP position from start position (higher #) to find SNP position in codon
         # add 1 because subtracting sequences
         snp_pos_in_cds = int(cds_dict[protein][1]) - vcf_snp_position + 1
         # handles SNPs in first position in codon
         if snp_pos_in_cds % 3 == 1:
-            snp_info.append("first")
+            first += 1
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 3]
@@ -214,7 +210,7 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
             alt_codon = comp(alt_codon)
         # handles SNPs in second position in codon
         elif snp_pos_in_cds % 3 == 2:
-            snp_info.append("second")
+            second += 1
             codon = seq_dict[vcf_contig_id][vcf_snp_position] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2]
@@ -224,7 +220,7 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
                         seq_dict[vcf_contig_id][vcf_snp_position - 2]
             alt_codon = comp(alt_codon)
         elif snp_pos_in_cds % 3 == 0:
-            snp_info.append("third")
+            third += 1
             # reference codon sequence
             codon = seq_dict[vcf_contig_id][vcf_snp_position + 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position] + \
@@ -236,41 +232,22 @@ def write_coding_line(codon_dict, cds_dict, seq_dict,
                         vcf_alt_base
             alt_codon = comp(alt_codon)
         else:
-            print("Error calculating SNP position.")
+            print("broken")
     else:
-        print("Error detecting strand direction (+/- expected).")
+        print("broken")
     if codon_dict[alt_codon] == codon_dict[codon]:
-        snp_info.append("synonymous")
-        write_synon_line(codon, alt_codon, vcf_line, out_vcf)
+        silent += 1
+        write_silent_line(codon, alt_codon, vcf_line, out_vcf)
     elif codon_dict[alt_codon] == "*":
-        snp_info.append("nonsense")
+        nonsense += 1
         write_nonsense_line(codon, alt_codon, codon_dict,
                             cds_dict, snp_pos_in_cds, protein,
                             vcf_contig_id, vcf_line, out_vcf)
     else:
-        snp_info.append("nonsynonymous")
+        nonsynon += 1
         write_nonsynon_line(codon, alt_codon, codon_dict,
                             cds_dict, snp_pos_in_cds, protein,
                             vcf_contig_id, vcf_line, out_vcf)
-    return snp_info
-
-
-def get_stats(coding, first, second, third, synon, nonsynon, nonsense):
-    """Writes SNP statistics to stats output file (out_stats)
-    (See: # DEFINE OUTPUT FILES #)"""
-    stats = str("SNP Statistics" + "\n\n" +
-                 "Total SNPs: " + str(snp) + "\n" +
-                 "Non-coding: " + str(non_cod) + "\n" +
-                 "Coding: " + str(coding) + "\n" +
-                 "% Coding: " + str(round(coding / (non_cod + coding) * 100, 2)) + "%\n\n" +
-                 "Synonymous substitutions: " + str(synon) + "\n" +
-                 "Non-synonymous substitutions: " + str(nonsynon) + "\n" +
-                 "Nonsense (early stop) substitutions: " + str(nonsense) + "\n\n" +
-                 "Position in codon:\n" +
-                 "1st - " + str(first) + "\n" +
-                 "2nd - " + str(second) + "\n" +
-                 "3rd - " + str(third) + "\n")
-    return stats
 
 
 # INPUT FILES #
@@ -282,7 +259,6 @@ fasta_file = sys.argv[2]
 vcf_file = sys.argv[3]
 # save VCF name without extension for output filename
 vcf_file_no_ext = vcf_file.rsplit(".", 1)[0]
-
 
 # PARSE INPUT #
 # parse CDS coordinate file
@@ -302,18 +278,18 @@ for line in coords:
     protein = cds_line[4]
     cds_list = [start_position, end_position, strand, contig_id]
     cds_dict[protein] = cds_list
+
 # parse FASTA file
 seq_dict = readfasta(fasta_file)
+
 # parse VCF file
 g = open(vcf_file, "r")
 vcf = g.readlines()
 g.close()
 
-
-# DEFINE OUTPUT FILES #
+# DEFINE OUTPUT FILE #
 # open output annotated VCF file
 out_vcf = open(vcf_file_no_ext + ".annot.vcf", "w")
-out_stats = "substitution_statistics.txt"
 
 
 # VCF ANNOTATION PIPELINE #
@@ -321,12 +297,14 @@ out_stats = "substitution_statistics.txt"
 snp = 0
 coding = 0
 non_cod = 0
+pos = 0
+neg = 0
 first = 0
 second = 0
 third = 0
-synon = 0
-nonsynon = 0
+silent = 0
 nonsense = 0
+nonsynon = 0
 # begin annotating by iterating through input VCF and saving each line to output
 for line in vcf:
     # save header lines to output VCF file without editing
@@ -346,40 +324,31 @@ for line in vcf:
             protein_list = [s for s in cds_dict.keys() if vcf_contig_id in s]
             for protein in protein_list:
                 # verify that SNP position is within a CDS
-                if int(cds_dict[protein][0]) <= int(vcf_snp_position) <= int(cds_dict[protein][1]):
-                    correct_protein = protein
-                else:
-                    correct_protein = "none"
-            if correct_protein != "none":
-                coding += 1
-                # write to VCF and return a list (snp_info) containing SNP position and effect information
-                snp_info = write_coding_line(codon_dict, cds_dict, seq_dict,
-                                             correct_protein, vcf_contig_id,
-                                             vcf_snp_position, vcf_alt_base,
-                                             vcf_line, out_vcf)
-                if snp_info[0] == "first":
-                    first += 1
-                elif snp_info[0] == "second":
-                    second += 1
-                elif snp_info[0] == "third":
-                    third += 1
-                if snp_info[1] == "synonymous":
-                    synon += 1
-                elif snp_info[1] == "nonsynonymous":
-                    nonsynon += 1
-                elif snp_info[1] == "nonsense":
-                    nonsense += 1
-            else:
-                non_cod += 1
-                write_non_coding_line(vcf_line, out_vcf)
+                if int(cds_dict[protein][0]) > int(vcf_snp_position) > int(cds_dict[protein][1]):
+                    write_coding_line(codon_dict, cds_dict, seq_dict,
+                                      protein, vcf_contig_id,
+                                      vcf_snp_position, vcf_alt_base,
+                                      vcf_line, out_vcf)
+                    continue
         # else annotate as non-coding mutation
         else:
-            non_cod += 1
             write_non_coding_line(vcf_line, out_vcf)
-        # write updated stats to out_stats summary file with each iteration
-        h = open(out_stats, "w")
-        h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense))
-        h.close()
+
 
 # close output VCF file
 out_vcf.close()
+# print SNP statistics to stdout
+print("SNP Statistics" + "\n\n" +
+      "Total SNPs: " + str(snp) + "\n" +
+      "Non-coding: " + str(non_cod) + "\n" +
+      "Coding: " + str(coding) + "\n" +
+      "% Coding: " + str(round(coding / (non_cod + coding) * 100, 2)) + "%\n\n" +
+      "Silent substitutions: " + str(silent) + "\n" +
+      "Nonsense (early stop) substitutions: " + str(nonsense) + "\n" +
+      "Non-synonymous substitutions: " + str(nonsynon) + "\n\n" +
+      "Positive strand: " + str(pos) + "\n" +
+      "Negative strand: " + str(neg) + "\n\n" +
+      "Position in codon:\n" +
+      "1st - " + str(first) + "\n" +
+      "2nd - " + str(second) + "\n" +
+      "3rd - " + str(third))

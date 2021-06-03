@@ -452,9 +452,6 @@ for line in vcf:
             h = open(out_stats, "w")
             h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
             h.close()
-            # print(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
-
-
 # close output VCF file
 out_vcf.close()
 

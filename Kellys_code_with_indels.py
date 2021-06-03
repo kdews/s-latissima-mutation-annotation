@@ -3,6 +3,11 @@ import math
 import gzip
 from Bio import SeqIO
 
+# SANDBOX PARAMETERS
+# "data/assembly_ST_collapse_with_short_genes.complete_ORFs.cds_coords"
+# "data/assembly_ST_collapse_with_short_genes.fa"
+# "data/s_latissima_wgs_50_subset_FILT_qual20_SNPs_biallelic.calls.recode.vcf"
+
 # USAGE #
 if len(sys.argv) < 2 or sys.argv[1] == "-h":
     print("\n-------------------------FIND DELETERIOUS MUTATIONS IN VARIATION DATA-------------------------\n\n"
@@ -460,7 +465,7 @@ fileIn = open(vcf_file_no_ext + ".annot.vcf", "r")
 out_vcf = fileIn.readlines()
 fileIn.close()
 
-fileOut = open(vcf_file_no_ext + "_annot_filtered.vcf", "w")
+fileOut = open(vcf_file_no_ext + ".annot.filtered.vcf", "w")
 
 counter = 0
 for line in out_vcf:
@@ -485,6 +490,11 @@ for line in out_vcf:
                 previous_vcf_line_full = line
                 previous_vcf_contig_id = vcf_contig_id
                 previous_vcf_snp_position = vcf_snp_position
+        else:
+            fileOut.write(previous_vcf_line_full)
+            previous_vcf_line_full = line
+            previous_vcf_contig_id = vcf_contig_id
+            previous_vcf_snp_position = vcf_snp_position
 fileOut.write(line)
 fileOut.close()
 ### INTERMEDIATE FILE THAT IS NOT CORRECTED FOR COPIES CAN BE DELETED HERE!! ###

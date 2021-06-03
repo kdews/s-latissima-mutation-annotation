@@ -3,11 +3,6 @@ import math
 import gzip
 from Bio import SeqIO
 
-# SANDBOX PARAMETERS
-# "data/assembly_ST_collapse_with_short_genes.complete_ORFs.cds_coords"
-# "data/assembly_ST_collapse_with_short_genes.fa"
-# "data/s_latissima_wgs_50_subset_FILT_qual20_SNPs_biallelic.calls.recode.vcf"
-
 # USAGE #
 if len(sys.argv) < 2 or sys.argv[1] == "-h":
     print("\n-------------------------FIND DELETERIOUS MUTATIONS IN VARIATION DATA-------------------------\n\n"

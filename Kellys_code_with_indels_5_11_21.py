@@ -3,17 +3,12 @@ import math
 import gzip
 from Bio import SeqIO
 
-# SANDBOX PARAMETERS
-# "data/assembly_ST_collapse_with_short_genes.complete_ORFs.cds_coords"
-# "data/assembly_ST_collapse_with_short_genes.fa"
-# "data/s_latissima_wgs_50_subset_FILT_qual20_SNPs_biallelic.calls.recode.vcf"
-
 # USAGE #
 if len(sys.argv) < 2 or sys.argv[1] == "-h":
     print("\n-------------------------FIND DELETERIOUS MUTATIONS IN VARIATION DATA-------------------------\n\n"
           "Takes a CDS coordinate file (format: contig_id, first coord., last coord., strand, protein_id), \n"
-          "a transcriptome or genome FASTA file, and a VCF file, and outputs effect \n"
-          "of variants in an annotated VCF file (original filename + annot.vcf) with \"EFF=...\" appended to \n"
+          "a transcriptome or genome FASTA file, and a VCF file (filtered for SNPs), and outputs effect \n"
+          "of SNPs in an annotated VCF file (original filename + annot.vcf) with \"EFF=...\" appended to \n"
           "the INFO column, as well as a summary statistics file (substitution_statistics.txt).\n\n" +
           "Usage: python " + sys.argv[0] + " input.cds_coords input.fasta input.vcf" + "\n\n" +
           "Requires: BioPython")
@@ -99,109 +94,116 @@ def readfasta(filename):
     return fasta_dict
 
 
-def non_coding_line(vcf_line):
-    """Takes a line of input VCF file (vcf_line) and returns annotated VCF line
-    (See: # DEFINE OUTPUT FILES #)"""
+def write_non_coding_line(vcf_line, out_vcf):
+    """Takes a line of input VCF file (vcf_line) and an opened
+     output VCF file (out_vcf), annotates the VCF line, and
+     writes the annotated line to the output VCF
+     (See: # DEFINE OUTPUT FILES #)"""
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=NON_CODING"
-    return annot_vcf_line
+    vcf_line[7] = vcf_line[7] + ";EFF=NON_CODING"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def synon_line(codon, alt_codon, codon_dict,
-               snp_pos_in_cds, protein,
-               vcf_contig_id, vcf_line):
+def write_synon_line(codon, alt_codon,
+                     vcf_line, out_vcf):
     """Takes values for codon and alt_codon (in nucleic acid),
-    a line of input VCF file (vcf_line) and returns annotated VCF line
+    a line of input VCF file (vcf_line), and an opened output VCF file
+    (out_vcf), annotates the VCF line, and
+    writes the annotated line to the output VCF
     (See: # DEFINE OUTPUT FILES #)"""
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=SYNONYMOUS(LOW|SILENT|" + \
-                  codon + "/" + alt_codon + "|" + \
-                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
-                  codon_dict[alt_codon] + "|" + \
-                  str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|)"
-    return annot_vcf_line
+    vcf_line[7] = vcf_line[7] + ";EFF=SYNONYMOUS(SILENT|" + \
+                  codon + "/" + alt_codon + "|)"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def nonsynon_line(codon, alt_codon, codon_dict,
-                  cds_dict, snp_pos_in_cds, protein,
-                  vcf_contig_id, vcf_line):
+def write_nonsynon_line(codon, alt_codon, codon_dict,
+                        cds_dict, snp_pos_in_cds, protein,
+                        vcf_contig_id, vcf_line, out_vcf):
     """Takes values for codon and alt_codon (in nucleic acid),
         a codon to amino acid dictionary (codon_dict), the position of the SNP
         in the CDS (snp_pos_in_cds), a CDS dictionary (cds_dict), a line of input
-        VCF file (vcf_line) and returns annotated VCF line
+        VCF file (vcf_line), and an opened output VCF file (out_vcf), annotates
+        the VCF line, and writes the annotated line to the output VCF
         (See: # DEFINE OUTPUT FILES #)"""
     # annotate radical and conservative amino acid changes
     if codon_dict[codon] == "*" or codon_dict[alt_codon] == "*":
         sub_class = "CONSERVATIVE"
+        print("RECOGNIZED")
     elif volume_dict[codon_dict[codon]] == volume_dict[codon_dict[alt_codon]] and \
             polarity_dict[codon_dict[codon]] == polarity_dict[codon_dict[alt_codon]]:
         sub_class = "CONSERVATIVE"
     else:
         sub_class = "RADICAL"
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=NON_SYNONYMOUS_CODING(MODERATE|MISSENSE|" + \
+    vcf_line[7] = vcf_line[7] + ";EFF=NON_SYNONYMOUS_CODING(MISSENSE|" + \
                   codon + "/" + alt_codon + "|" + \
                   codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
                   codon_dict[alt_codon] + "|" + \
                   str(math.ceil((int(cds_dict[protein][1]) -
                                  int(cds_dict[protein][0])) / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|" + sub_class + "|)"
-    return annot_vcf_line
+                  vcf_contig_id + "|" + "CODING" + "|" + \
+                  cds_dict[protein][3] + "|" + sub_class + "|)"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def nonsense_line(codon, alt_codon, codon_dict,
-                  snp_pos_in_cds, protein,
-                  vcf_contig_id, vcf_line):
+def write_nonsense_line(codon, alt_codon, codon_dict,
+                        cds_dict, snp_pos_in_cds, protein,
+                        vcf_contig_id, vcf_line, out_vcf):
     """Takes values for codon and alt_codon (in nucleic acid),
     a codon to amino acid dictionary (codon_dict),
     a CDS dictionary (cds_dict), the position of the
     SNP in the CDS (snp_pos_in_cds), a line of input
-    VCF file (vcf_line) and returns annotated VCF line
+    VCF file (vcf_line), and an opened output VCF file
+    (out_vcf), annotates the VCF line, and writes
+    the annotated line to the output VCF
     (See: # DEFINE OUTPUT FILES #)"""
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=STOP_GAINED(HIGH|NONSENSE|" + \
+    vcf_line[7] = vcf_line[7] + ";EFF=STOP_GAINED(NONSENSE|" + \
                   codon + "/" + alt_codon + "|" + \
                   codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
                   codon_dict[alt_codon] + "|" + \
                   str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|)"
-    return annot_vcf_line
+                  vcf_contig_id + "|" + "CODING" + "|" + \
+                  cds_dict[protein][3] + "|)"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def deletion_line(vcf_line):
-    """Takes a line of input VCF file (vcf_line) and returns annotated VCF line
+def write_deletion_line(vcf_line, out_vcf):
+    """Takes a line of input VCF file (vcf_line) and an opened
+     output VCF file (out_vcf), annotates the VCF line, and
+     writes the annotated line to the output VCF
      (See: # DEFINE OUTPUT FILES #)"""
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=DELETION"
-    return annot_vcf_line
+    vcf_line[7] = vcf_line[7] + ";EFF=DELETION"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def insertion_line(vcf_line):
-    """Takes a line of input VCF file (vcf_line) and returns annotated VCF line
+def write_insertion_line(vcf_line, out_vcf):
+    """Takes a line of input VCF file (vcf_line) and an opened
+     output VCF file (out_vcf), annotates the VCF line, and
+     writes the annotated line to the output VCF
      (See: # DEFINE OUTPUT FILES #)"""
     # appends effect information to the VCF "INFO" field
-    annot_vcf_line = vcf_line
-    annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=INSERTION"
-    return annot_vcf_line
+    vcf_line[7] = vcf_line[7] + ";EFF=INSERTION"
+    vcf_line = "\t".join(vcf_line)
+    out_vcf.write(vcf_line + "\n")
 
 
-def coding_line(codon_dict, cds_dict, seq_dict,
-                protein, vcf_contig_id, vcf_snp_position,
-                vcf_alt_base, vcf_line):
+def write_coding_line(codon_dict, cds_dict, seq_dict,
+                      protein, vcf_contig_id, vcf_snp_position,
+                      vcf_alt_base, vcf_line, out_vcf):
     """Takes values for a codon to amino acid dictionary (codon_dict),
     a CDS dictionary (cds_dict), a line of input VCF file (vcf_line)
     as well as its associated protein and contig IDs (protein, vcf_contig_id),
     SNP position (vcf_snp_position) and alternative base call (vcf_alt_base),
-    and returns annotated VCF line
+    and an opened output VCF file (out_vcf), annotates the VCF line, and writes
+    the annotated line to the output VCF
     (See: # DEFINE OUTPUT FILES #)"""
     snp_info = []
     # handles CDSs translated in forward direction
@@ -281,27 +283,24 @@ def coding_line(codon_dict, cds_dict, seq_dict,
         print("Error detecting strand direction (+/- expected).")
     if codon_dict[alt_codon] == codon_dict[codon]:
         snp_info.append("synonymous")
-        annot_vcf_line = synon_line(codon, alt_codon, codon_dict,
-                                    snp_pos_in_cds, protein,
-                                    vcf_contig_id, vcf_line)
+        write_synon_line(codon, alt_codon, vcf_line, out_vcf)
     elif codon_dict[alt_codon] == "*":
         snp_info.append("nonsense")
-        annot_vcf_line = nonsense_line(codon, alt_codon, codon_dict,
-                                             snp_pos_in_cds, protein,
-                                             vcf_contig_id, vcf_line)
+        write_nonsense_line(codon, alt_codon, codon_dict,
+                            cds_dict, snp_pos_in_cds, protein,
+                            vcf_contig_id, vcf_line, out_vcf)
     else:
         snp_info.append("nonsynonymous")
-        annot_vcf_line = nonsynon_line(codon, alt_codon, codon_dict,
-                                             cds_dict, snp_pos_in_cds, protein,
-                                             vcf_contig_id, vcf_line)
-    snp_info = [annot_vcf_line, snp_info]
+        write_nonsynon_line(codon, alt_codon, codon_dict,
+                            cds_dict, snp_pos_in_cds, protein,
+                            vcf_contig_id, vcf_line, out_vcf)
     return snp_info
 
 
 def get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion):
-    """Writes variant statistics to stats output file (out_stats)
+    """Writes SNP statistics to stats output file (out_stats)
     (See: # DEFINE OUTPUT FILES #)"""
-    stats = str("Variant Statistics" + "\n\n" +
+    stats = str("SNP Statistics" + "\n\n" +
                 "Total SNPs: " + str(snp) + "\n" +
                 "Non-coding: " + str(non_cod) + "\n" +
                 "Coding: " + str(coding) + "\n" +
@@ -356,7 +355,7 @@ g.close()
 # DEFINE OUTPUT FILES #
 # open output annotated VCF file
 out_vcf = open(vcf_file_no_ext + ".annot.vcf", "w")
-out_stats = "VCF_statistics.txt"
+out_stats = "substitution_statistics.txt"
 
 # VCF ANNOTATION PIPELINE #
 # create counters to save coding SNP statistics
@@ -384,81 +383,60 @@ for line in vcf:
         vcf_contig_id = vcf_line[0]
         vcf_snp_position = int(vcf_line[1])
         vcf_ref_base = vcf_line[3]
-        vcf_alt_base = vcf_line[4]
-        annot_vcf_line = []
-        # write deletion line to annotated VCF and go back to the start of the loop
+        # Writes deletion to the VCF and goes back to the start of the loop
         if len(vcf_ref_base) > 1:
             deletion += 1
-            annot_vcf_line = deletion_line(vcf_line)
+            write_deletion_line(vcf_line, out_vcf)
             continue
-        # create a list of alt_bases to iterate through and check for protein effect in each of those mutations
+        # Creating a list for alt_bases that will be iterate through to check for protein effect in each of those mutations
         alt_base_list = vcf_line[4].strip().split(",")
         # verify that contig has CDS
         if any(vcf_contig_id in s for s in cds_dict.keys()):
             protein_list = [s for s in cds_dict.keys() if vcf_contig_id in s]
-            correct_proteins = []
+            correct_protein = "none"
             for protein in protein_list:
                 # verify that SNP position is within a CDS
                 if int(cds_dict[protein][0]) <= int(vcf_snp_position) <= int(cds_dict[protein][1]):
-                    # make list to hold protein IDs of potentially overlapping protein CDSs
-                    correct_proteins.append(protein)
-            # define annot_vcf_line and update SNP position/effect information for SNP_statistics output
-            if correct_proteins:
+                    correct_protein = protein
+            if correct_protein != "none":
                 coding += 1
-                # if the variant is in more than one protein CDS, it will iterate through each protein ID
-                # and add as many annotations to the SAME annotated VCF line as there are protein IDs
-                # in the format: "EFF=protein1;EFF=protein2;..."
-                for protein in correct_proteins:
-                    for vcf_alt_base in alt_base_list:
-                        # if alt base is bigger than one, means it's an insertion ex: ref == A alt == ATC
-                        if len(vcf_alt_base) > 1:
-                            insertion += 1
-                            annot_vcf_line = insertion_line(vcf_line)
-                        elif vcf_alt_base == "*":
-                            deletion += 1
-                            annot_vcf_line = deletion_line(vcf_line)
-                        else:
-                            snp_info = coding_line(codon_dict, cds_dict, seq_dict,
-                                                 protein, vcf_contig_id,
-                                                 vcf_snp_position, vcf_alt_base,
-                                                 vcf_line)
-                            annot_vcf_line = snp_info[0]
-                            if snp_info[1][0] == "first":
-                                first += 1
-                            elif snp_info[1][0] == "second":
-                                second += 1
-                            elif snp_info[1][0] == "third":
-                                third += 1
-                            if snp_info[1][1] == "synonymous":
-                                synon += 1
-                            elif snp_info[1][1] == "nonsynonymous":
-                                nonsynon += 1
-                            elif snp_info[1][1] == "nonsense":
-                                nonsense += 1
-                    # set vcf_line to annot_vcf_line
-                    # (only used if iterating through again, e.g., variant is in multiple protein CDSs)
-                    vcf_line = annot_vcf_line
-                    if len(correct_proteins) > 1:
-                        print(annot_vcf_line)
+                # write to VCF and return a list (snp_info) containing SNP position and effect information
+                for vcf_alt_base in alt_base_list:
+                    # If alt base is bigger than one, means it's an insertion ex: ref == A alt == ATC
+                    if len(vcf_alt_base) > 1:
+                        insertion += 1
+                        write_insertion_line(vcf_line, out_vcf)
+                    elif vcf_alt_base == "*":
+                        deletion += 1
+                        write_deletion_line(vcf_line, out_vcf)
+                    else:
+                        snp_info = write_coding_line(codon_dict, cds_dict, seq_dict,
+                                             correct_protein, vcf_contig_id,
+                                             vcf_snp_position, vcf_alt_base,
+                                             vcf_line, out_vcf)
+                        if snp_info[0] == "first":
+                            first += 1
+                        elif snp_info[0] == "second":
+                            second += 1
+                        elif snp_info[0] == "third":
+                            third += 1
+                        if snp_info[1] == "synonymous":
+                            synon += 1
+                        elif snp_info[1] == "nonsynonymous":
+                            nonsynon += 1
+                        elif snp_info[1] == "nonsense":
+                            nonsense += 1
             else:
                 non_cod += 1
-                annot_vcf_line = non_coding_line(vcf_line)
+                write_non_coding_line(vcf_line, out_vcf)
         # else annotate as non-coding mutation
         else:
             non_cod += 1
-            annot_vcf_line = non_coding_line(vcf_line)
-        if annot_vcf_line:
-            annot_vcf_line = "\t".join(annot_vcf_line)
-            out_vcf.write(annot_vcf_line + "\n")
-        else:
-            print("Error creating annotated VCF line.")
-        # write updated stats to out_stats summary file after every 100th line
-        if snp % 100 == 0:
-            h = open(out_stats, "w")
-            h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
-            h.close()
-            # print(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
-
+            write_non_coding_line(vcf_line, out_vcf)
+        # write updated stats to out_stats summary file with each iteration
+        h = open(out_stats, "w")
+        h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
+        h.close()
 
 # close output VCF file
 out_vcf.close()

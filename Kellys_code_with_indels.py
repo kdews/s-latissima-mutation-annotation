@@ -152,7 +152,8 @@ def nonsynon_line(codon, alt_codon, codon_dict,
                                  int(cds_dict[protein][0])) / 3)) + "|" + \
                   vcf_contig_id + "|" + "|" + "CODING" + "|" + \
                   protein + "|" + sub_class + "|)"
-    return annot_vcf_line
+    nonsynon_info = [annot_vcf_line, sub_class]
+    return nonsynon_info
 
 
 def nonsense_line(codon, alt_codon, codon_dict,
@@ -203,6 +204,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
     SNP position (vcf_snp_position) and alternative base call (vcf_alt_base),
     and returns annotated VCF line
     (See: # DEFINE OUTPUT FILES #)"""
+    global nonsynon_info
     snp_info = []
     # handles CDSs translated in forward direction
     if cds_dict[protein][2] == "+":
@@ -291,14 +293,17 @@ def coding_line(codon_dict, cds_dict, seq_dict,
                                              vcf_contig_id, vcf_line)
     else:
         snp_info.append("nonsynonymous")
-        annot_vcf_line = nonsynon_line(codon, alt_codon, codon_dict,
+        subclass = nonsynon_info[1]
+        snp_info.append(subclass)
+        nonsynon_info = nonsynon_line(codon, alt_codon, codon_dict,
                                              cds_dict, snp_pos_in_cds, protein,
                                              vcf_contig_id, vcf_line)
+        annot_vcf_line = nonsynon_info[0]
     snp_info = [annot_vcf_line, snp_info]
     return snp_info
 
 
-def get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion):
+def get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion, radical, conservative):
     """Writes variant statistics to stats output file (out_stats)
     (See: # DEFINE OUTPUT FILES #)"""
     stats = str("Variant Statistics" + "\n\n" +
@@ -310,7 +315,9 @@ def get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion,
                 "Non-synonymous substitutions: " + str(nonsynon) + "\n" +
                 "Nonsense (early stop) substitutions: " + str(nonsense) + "\n" +
                 "Insertions: " + str(insertion) + "\n" +
-                "Deletions: " + str(deletion) + "\n\n" +
+                "Deletions: " + str(deletion) + "\n"
+                "Radical: " + str(radical) + "\n"
+                "Conservative: " + str(conservative) + "\n\n" +
                 "Position in codon:\n" +
                 "1st - " + str(first) + "\n" +
                 "2nd - " + str(second) + "\n" +
@@ -371,6 +378,8 @@ nonsynon = 0
 nonsense = 0
 deletion = 0
 insertion = 0
+radical = 0
+conservative = 0
 # begin annotating by iterating through input VCF and saving each line to output
 for line in vcf:
     # save header lines to output VCF file without editing
@@ -433,6 +442,10 @@ for line in vcf:
                                 synon += 1
                             elif snp_info[1][1] == "nonsynonymous":
                                 nonsynon += 1
+                                if snp_info[2] == "RADICAL":
+                                    radical += 1
+                                elif snp_info[2] == "CONSERVATIVE":
+                                    conservative += 1
                             elif snp_info[1][1] == "nonsense":
                                 nonsense += 1
                     # set vcf_line to annot_vcf_line
@@ -457,6 +470,9 @@ for line in vcf:
             h = open(out_stats, "w")
             h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
             h.close()
+            # print(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
+
+
 # close output VCF file
 out_vcf.close()
 
@@ -465,7 +481,7 @@ fileIn = open(vcf_file_no_ext + ".annot.vcf", "r")
 out_vcf = fileIn.readlines()
 fileIn.close()
 
-fileOut = open(vcf_file_no_ext + ".annot.filtered.vcf", "w")
+fileOut = open(vcf_file_no_ext + "_annot_filtered.vcf", "w")
 
 counter = 0
 for line in out_vcf:
@@ -490,11 +506,6 @@ for line in out_vcf:
                 previous_vcf_line_full = line
                 previous_vcf_contig_id = vcf_contig_id
                 previous_vcf_snp_position = vcf_snp_position
-        else:
-            fileOut.write(previous_vcf_line_full)
-            previous_vcf_line_full = line
-            previous_vcf_contig_id = vcf_contig_id
-            previous_vcf_snp_position = vcf_snp_position
 fileOut.write(line)
 fileOut.close()
 ### INTERMEDIATE FILE THAT IS NOT CORRECTED FOR COPIES CAN BE DELETED HERE!! ###

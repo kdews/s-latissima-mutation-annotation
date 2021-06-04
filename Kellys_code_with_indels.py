@@ -303,7 +303,8 @@ def coding_line(codon_dict, cds_dict, seq_dict,
     return snp_info
 
 
-def get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion, radical, conservative):
+def get_stats(coding, first, second, third, synon, nonsynon, nonsense,
+              deletion, insertion, radical, conservative):
     """Writes variant statistics to stats output file (out_stats)
     (See: # DEFINE OUTPUT FILES #)"""
     stats = str("Variant Statistics" + "\n\n" +

@@ -364,7 +364,7 @@ g.close()
 # DEFINE OUTPUT FILES #
 # open output annotated VCF file
 out_vcf = open(vcf_file_no_ext + ".annot.vcf", "w")
-out_stats = "VCF_statistics.txt"
+out_stats = vcf_file_no_ext + ".statistics.txt"
 
 # VCF ANNOTATION PIPELINE #
 # create counters to save coding SNP statistics

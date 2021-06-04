@@ -117,12 +117,12 @@ def synon_line(codon, alt_codon, codon_dict,
     # appends effect information to the VCF "INFO" field
     annot_vcf_line = vcf_line
     annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=SYNONYMOUS(LOW|SILENT|" + \
-                  codon + "/" + alt_codon + "|" + \
-                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
-                  codon_dict[alt_codon] + "|" + \
-                  str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|)"
+                        codon + "/" + alt_codon + "|" + \
+                        codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
+                        codon_dict[alt_codon] + "|" + \
+                        str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
+                        vcf_contig_id + "|" + "|" + "CODING" + "|" + \
+                        protein + "|)"
     return annot_vcf_line
 
 
@@ -135,8 +135,8 @@ def nonsynon_line(codon, alt_codon, codon_dict,
         VCF file (vcf_line) and returns annotated VCF line
         (See: # DEFINE OUTPUT FILES #)"""
     # annotate radical and conservative amino acid changes
-    if codon_dict[codon] == "*" or codon_dict[alt_codon] == "*":
-        sub_class = "CONSERVATIVE"
+    if codon_dict[codon] == "*":
+        sub_class = "RADICAL"
     elif volume_dict[codon_dict[codon]] == volume_dict[codon_dict[alt_codon]] and \
             polarity_dict[codon_dict[codon]] == polarity_dict[codon_dict[alt_codon]]:
         sub_class = "CONSERVATIVE"
@@ -145,13 +145,13 @@ def nonsynon_line(codon, alt_codon, codon_dict,
     # appends effect information to the VCF "INFO" field
     annot_vcf_line = vcf_line
     annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=NON_SYNONYMOUS_CODING(MODERATE|MISSENSE|" + \
-                  codon + "/" + alt_codon + "|" + \
-                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
-                  codon_dict[alt_codon] + "|" + \
-                  str(math.ceil((int(cds_dict[protein][1]) -
-                                 int(cds_dict[protein][0])) / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|" + sub_class + "|)"
+                        codon + "/" + alt_codon + "|" + \
+                        codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
+                        codon_dict[alt_codon] + "|" + \
+                        str(math.ceil((int(cds_dict[protein][1]) -
+                                       int(cds_dict[protein][0])) / 3)) + "|" + \
+                        vcf_contig_id + "|" + "|" + "CODING" + "|" + \
+                        protein + "|" + sub_class + "|)"
     nonsynon_info = [annot_vcf_line, sub_class]
     return nonsynon_info
 
@@ -168,12 +168,12 @@ def nonsense_line(codon, alt_codon, codon_dict,
     # appends effect information to the VCF "INFO" field
     annot_vcf_line = vcf_line
     annot_vcf_line[7] = annot_vcf_line[7] + ";EFF=STOP_GAINED(HIGH|NONSENSE|" + \
-                  codon + "/" + alt_codon + "|" + \
-                  codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
-                  codon_dict[alt_codon] + "|" + \
-                  str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
-                  vcf_contig_id + "|" + "|" + "CODING" + "|" + \
-                  protein + "|)"
+                        codon + "/" + alt_codon + "|" + \
+                        codon_dict[codon] + str(math.ceil(snp_pos_in_cds / 3)) + \
+                        codon_dict[alt_codon] + "|" + \
+                        str(math.ceil(snp_pos_in_cds / 3)) + "|" + \
+                        vcf_contig_id + "|" + "|" + "CODING" + "|" + \
+                        protein + "|)"
     return annot_vcf_line
 
 
@@ -205,13 +205,13 @@ def coding_line(codon_dict, cds_dict, seq_dict,
     and returns annotated VCF line
     (See: # DEFINE OUTPUT FILES #)"""
     global nonsynon_info
-    snp_info = []
+    snp_info = ["codon position", "annotation", "sub_class"]
     # handles CDSs translated in forward direction
     if cds_dict[protein][2] == "+":
         # add 1 because subtracting sequences
         snp_pos_in_cds = vcf_snp_position - int(cds_dict[protein][0]) + 1
         if snp_pos_in_cds % 3 == 1:
-            snp_info.append("first")
+            snp_info[0] = "first"
             # all positions must be corrected for Python numbering (starts at 0, so subtract 1)
             # reference codon sequence
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
@@ -222,7 +222,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
                         seq_dict[vcf_contig_id][vcf_snp_position] + \
                         seq_dict[vcf_contig_id][vcf_snp_position + 1]
         elif snp_pos_in_cds % 3 == 2:
-            snp_info.append("second")
+            snp_info[0] = "second"
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position]
@@ -230,7 +230,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
                         vcf_alt_base + \
                         seq_dict[vcf_contig_id][vcf_snp_position]
         elif snp_pos_in_cds % 3 == 0:
-            snp_info.append("third")
+            snp_info[0] = "third"
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 3] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1]
@@ -245,7 +245,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
         snp_pos_in_cds = int(cds_dict[protein][1]) - vcf_snp_position + 1
         # handles SNPs in first position in codon
         if snp_pos_in_cds % 3 == 1:
-            snp_info.append("first")
+            snp_info[0] = "first"
             codon = seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 3]
@@ -256,7 +256,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
             alt_codon = comp(alt_codon)
         # handles SNPs in second position in codon
         elif snp_pos_in_cds % 3 == 2:
-            snp_info.append("second")
+            snp_info[0] = "second"
             codon = seq_dict[vcf_contig_id][vcf_snp_position] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position - 2]
@@ -266,7 +266,7 @@ def coding_line(codon_dict, cds_dict, seq_dict,
                         seq_dict[vcf_contig_id][vcf_snp_position - 2]
             alt_codon = comp(alt_codon)
         elif snp_pos_in_cds % 3 == 0:
-            snp_info.append("third")
+            snp_info[0] = "third"
             # reference codon sequence
             codon = seq_dict[vcf_contig_id][vcf_snp_position + 1] + \
                     seq_dict[vcf_contig_id][vcf_snp_position] + \
@@ -282,23 +282,23 @@ def coding_line(codon_dict, cds_dict, seq_dict,
     else:
         print("Error detecting strand direction (+/- expected).")
     if codon_dict[alt_codon] == codon_dict[codon]:
-        snp_info.append("synonymous")
+        snp_info[1] = "synonymous"
         annot_vcf_line = synon_line(codon, alt_codon, codon_dict,
                                     snp_pos_in_cds, protein,
                                     vcf_contig_id, vcf_line)
     elif codon_dict[alt_codon] == "*":
-        snp_info.append("nonsense")
+        snp_info[1] = "nonsense"
         annot_vcf_line = nonsense_line(codon, alt_codon, codon_dict,
-                                             snp_pos_in_cds, protein,
-                                             vcf_contig_id, vcf_line)
+                                       snp_pos_in_cds, protein,
+                                       vcf_contig_id, vcf_line)
     else:
-        snp_info.append("nonsynonymous")
-        subclass = nonsynon_info[1]
-        snp_info.append(subclass)
+        snp_info[1] = "nonsynonymous"
         nonsynon_info = nonsynon_line(codon, alt_codon, codon_dict,
-                                             cds_dict, snp_pos_in_cds, protein,
-                                             vcf_contig_id, vcf_line)
+                                      cds_dict, snp_pos_in_cds, protein,
+                                      vcf_contig_id, vcf_line)
         annot_vcf_line = nonsynon_info[0]
+        subclass = nonsynon_info[1]
+        snp_info[2] = subclass
     snp_info = [annot_vcf_line, snp_info]
     return snp_info
 
@@ -317,8 +317,9 @@ def get_stats(coding, first, second, third, synon, nonsynon, nonsense,
                 "Nonsense (early stop) substitutions: " + str(nonsense) + "\n" +
                 "Insertions: " + str(insertion) + "\n" +
                 "Deletions: " + str(deletion) + "\n"
-                "Radical: " + str(radical) + "\n"
-                "Conservative: " + str(conservative) + "\n\n" +
+                                                "Radical: " + str(radical) + "\n"
+                                                                             "Conservative: " + str(
+        conservative) + "\n\n" +
                 "Position in codon:\n" +
                 "1st - " + str(first) + "\n" +
                 "2nd - " + str(second) + "\n" +
@@ -429,9 +430,9 @@ for line in vcf:
                             annot_vcf_line = deletion_line(vcf_line)
                         else:
                             snp_info = coding_line(codon_dict, cds_dict, seq_dict,
-                                                 protein, vcf_contig_id,
-                                                 vcf_snp_position, vcf_alt_base,
-                                                 vcf_line)
+                                                   protein, vcf_contig_id,
+                                                   vcf_snp_position, vcf_alt_base,
+                                                   vcf_line)
                             annot_vcf_line = snp_info[0]
                             if snp_info[1][0] == "first":
                                 first += 1
@@ -443,10 +444,16 @@ for line in vcf:
                                 synon += 1
                             elif snp_info[1][1] == "nonsynonymous":
                                 nonsynon += 1
-                                if snp_info[2] == "RADICAL":
+                                if snp_info[1][2] == "RADICAL":
                                     radical += 1
-                                elif snp_info[2] == "CONSERVATIVE":
+                                elif snp_info[1][2] == "CONSERVATIVE":
                                     conservative += 1
+                                elif snp_info[1][2] == "sub_class":
+                                    print("Radical and conservative annotation of non-synonymous SNPs is failing.")
+                                else:
+                                    print("Error: snp_info[1][2] == " +
+                                          snp_info[1][2] +
+                                          " , but should be one of: 'sub_class', 'RADICAL', 'CONSERVATIVE'.")
                             elif snp_info[1][1] == "nonsense":
                                 nonsense += 1
                     # set vcf_line to annot_vcf_line
@@ -469,11 +476,11 @@ for line in vcf:
         # write updated stats to out_stats summary file after every 100th line
         if snp % 100 == 0:
             h = open(out_stats, "w")
-            h.write(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
+            h.write(get_stats(coding, first, second, third,
+                              synon, nonsynon, nonsense,
+                              deletion, insertion,
+                              radical, conservative))
             h.close()
-            # print(get_stats(coding, first, second, third, synon, nonsynon, nonsense, deletion, insertion))
-
-
 # close output VCF file
 out_vcf.close()
 

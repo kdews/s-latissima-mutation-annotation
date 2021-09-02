@@ -14,9 +14,9 @@ cd s-latissima-mutation-annotation
 * [SnpEff](https://pcingola.github.io/SnpEff) (v5.0c)
 ### Optional 
 * [SLURM](https://slurm.schedmd.com/download.html)
-- For submitting scripts with SLURM `sbatch`; can allow for higher memory and time allocations
+> For submitting scripts with SLURM `sbatch`; can allow for higher memory and time allocations
 * [AGAT](https://github.com/NBISweden/AGAT) (v0.8.0)
-- AGAT installation not required if annotation file is GTF
+> AGAT installation not required if annotation file is GTF
 
 ##### Note on shells
 I know for certain that sourcing the configuration file breaks without full paths if `sh` is used instead of `bash` - if you must use `sh` or another shell, be sure to give the output of `realpath mut_annot.config` as the first positional argument ($1) to the steps of the pipeline.

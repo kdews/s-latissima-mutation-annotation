@@ -6,13 +6,15 @@
 #SBATCH -o %x.log
 
 # Source configuration file
-config_file=$1
+[[ $1 ]] && config_file=$1 || config_file=mut_annot.config
 if [[ $config_file ]] && [[ -f $config_file]]
 then
 	source $config_file
 else
 	echo "Error - please provide config file. $config not found."
+	exit 1
 fi
+
 # Extract names from input files
 genome_basename=$(basename -- $genome)
 genome_basename_unzip=`echo $genome_basename | sed 's/\.gz//g'`
@@ -25,17 +27,15 @@ prot_basename_unzip=`echo $prot_basename | sed 's/\.gz//g'`
 cds_basename=$(basename -- $cds)
 cds_basename_unzip=`echo $cds_basename | sed 's/\.gz//g'`
 
-# Download snpEff and change into snpEff directory
+# Check for SnpEff installation and change into snpEff directory
 if [[ -d snpEff ]]
 then
 	cd snpEff
 else
-	echo "No snpEff directory detected, downloading now."
-	wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
-	unzip snpEff_latest_core.zip
-	cd snpEff
+	echo "Error - no snpEff directory detected."
+	exit 1
 fi
-echo "Writing files to $(pwd)"
+echo "Building SnpEff database in $(pwd)"
 
 # Optional: Anaconda configuration
 # Attempt to source Anaconda from $conda_sh (if provided)

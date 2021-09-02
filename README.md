@@ -88,9 +88,7 @@ SnpEff annotated VCF file. See the [documentation](https://pcingola.github.io/Sn
 ```
 snpEff_summary.html
 ```
-HTML file with extensive summary of SnpEff annotations in your VCF file.
-
-Examples:
+HTML file with extensive summary of SnpEff annotations in your VCF file. Here are some example figures:
 
 1. Plot of variant frequency by region (relative to genes)
 

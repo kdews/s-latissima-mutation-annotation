@@ -17,7 +17,7 @@ sbatch build_SnpEff_db.sbatch
 
 ### 2. Run SnpEff on *S. latissima* VCF
 
-**Copy** input VCF file to new `snpEff` directory, and run:
+***Copy*** input VCF file to new `snpEff` directory, and run:
 ```
 sbatch predict_SnpEff.sbatch
 ```

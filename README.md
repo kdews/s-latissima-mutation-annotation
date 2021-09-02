@@ -54,32 +54,44 @@ unzip snpEff_latest_core.zip
 
 ## Configuration
 Edit `mut_annot.config` with paths to:
-* Anaconda conda.sh file (e.g., `path/to/<anaconda-version>/etc/profile.d/conda.sh`)
+* Anaconda conda.sh file (i.e., `path/to/<anaconda-version>/etc/profile.d/conda.sh`)
 * Reference genome
 * Annotation file (GTF or GFF3)
 * CDS FASTA
 * Protein FASTA
 * VCF file
 
-Each step of the pipeline will first take the path to a config file as the first positional argument ($1); if one is not provided, it will then look for `mut_annot.config` in your current directory. 
+Each step of the pipeline will first take the path to a config file as the first positional argument ($1); if one is not provided, it will then look for `mut_annot.config` in your current directory. ***This pipeline REQUIRES that you edit the configuration file with your local paths and files. It will break if you do not edit the configuration file.***
 
 ## Running the pipeline
 The entire pipeline can be run either with `bash` or with SLURM's `sbatch`. Each script of the pipeline has built-in options to SLURM, but you can modify these with `sbatch [options]` (recommended) or by editing the `#SBATCH` headers of each script (not recommended). See the [documentation](https://slurm.schedmd.com/sbatch.html) for more information on `sbatch` options. 
 > Using SLURM to execute the pipeline is recommended, if possible, as some of these scripts can run for upwards of 10 hours and require memory allocations >8g.
 
-In the directory *containing* the `snpEff/` directory you [just downloaded](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory), i.e., the directory just *above* it, `/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository (recommended):
+In the directory *containing* the `snpEff/` directory you [just downloaded](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory) (i.e., the directory just *above* it), which would be `/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository (recommended):
 ### 1. Build SnpEff database for *S. latissima*
 ```
 bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]
 ```
 
-### 2. Run SnpEff on *S. latissima* VCF
+### 2. Run SnpEff variant annotation on *S. latissima* VCF
 ```
 bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 ```
 
+## Results
+Results of the analysis can be found in the `snpEff/` directory.
+`<your_vcf_name>.ann.vcf`
+SnpEff annotated VCF file. See the [documentation](https://pcingola.github.io/SnpEff/se_inputoutput/#ann-field-vcf-output-files) of SnpEff values in the ANN field to understand the putative effect(s) of each variant in your VCF file.
+`snpEff_summary.html`
+HTML file with extensive summary of SnpEff annotations in your VCF file. 
+
+
+See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml).
+`snpEff_genes.txt`
+Tab-delimited text file with counts of number of variants affecting each transcript and gene in the reference. See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#gene-counts-summary-snpeff_genestxt).
+
 ## Debugging & Troubleshooting
 The output at each step of the pipeline can be saved to a log file by specifying one to SLURM `sbatch -o out.log <script>` or by directing the output to a file (if running with `bash`), like so: `bash <script> > out.log`.
 
-You can use these to debug any errors you receive running the pipeline, or email me at kdeweese@usc.edu.
+You can use these logs to debug any errors you receive running the pipeline, or email me at kdeweese@usc.edu.
 

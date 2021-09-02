@@ -11,22 +11,21 @@ if [[ $config_file ]] && [[ -f $config_file ]]
 then
 	source $config_file
 else
-	echo "Error - please provide config file. \
-$config_file not found."
+	echo "Error - please provide config file. $config_file not found."
 	exit 1
 fi
 
 # Extract names from input files
 genome_basename=$(basename -- $genome)
-genome_basename_unzip=`echo $genome_basename | sed 's/\.gz//g'`
-genome_base=`echo $genome_basename | sed 's/\..*//g'`
+genome_basename_unzip=$(echo $genome_basename | sed 's/\.gz//g')
+genome_base=$(echo $genome_basename | sed 's/\..*//g')
 annot_basename=$(basename -- $annot)
-annot_basename_unzip=`echo $annot_basename | sed 's/\.gz//g'`
-annot_filetype=`echo $annot_basename_unzip |  sed 's/.*\.//g'`
+annot_basename_unzip=$(echo $annot_basename | sed 's/\.gz//g')
+annot_filetype=$(echo $annot_basename_unzip |  sed 's/.*\.//g')
 prot_basename=$(basename -- $prot)
-prot_basename_unzip=`echo $prot_basename | sed 's/\.gz//g'`
+prot_basename_unzip=$(echo $prot_basename | sed 's/\.gz//g')
 cds_basename=$(basename -- $cds)
-cds_basename_unzip=`echo $cds_basename | sed 's/\.gz//g'`
+cds_basename_unzip=$(echo $cds_basename | sed 's/\.gz//g')
 
 # Check for SnpEff installation and change into snpEff directory
 if [[ -d snpEff ]]

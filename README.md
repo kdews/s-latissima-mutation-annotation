@@ -4,10 +4,10 @@ A pipeline to detect and annotate the effects of deleterious mutations in *S. la
 ## The pipeline
 ### 1. Install dependencies
 * Java (>=v1.8)
-* [AGAT] (https://github.com/NBISweden/AGAT) (v0.8.0)
+* [AGAT](https://github.com/NBISweden/AGAT) (v0.8.0)
 #### Easy mode: Create Anaconda environment from mut\_annot.yml
 
-If you haven't already, install the lastest version of [Anaconda] (https://www.anaconda.com/).
+If you haven't already, install the lastest version of [Anaconda](https://www.anaconda.com/).
 
 The scripts will attempt to source Anaconda from the `$conda_sh` environment variable set in `mut_annot.config`. Please set `$conda_sh` to `path/to/<anaconda-version>/etc/profile.d/conda.sh` in `mut_annot.config`.
 

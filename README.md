@@ -25,6 +25,7 @@ I know for certain that sourcing the configuration file breaks without full path
 1. If you haven't already, install the lastest version of [Anaconda](https://www.anaconda.com/)
 ##### Note on Anaconda
 This pipeline will attempt to source Anaconda from the `$conda_sh` environment variable set in `mut_annot.config`. **Please set** `$conda_sh` to `path/to/<anaconda-version>/etc/profile.d/conda.sh` in `mut_annot.config`. If you are installing Anaconda for the first time, now would be a good time to find this path.
+
 2. Create Anaconda env from `mut_annot.yml`
 ```
 conda env create -f mut_annot.yml
@@ -38,7 +39,12 @@ unzip snpEff_latest_core.zip
 > @ Kelly: remember to add final mut\_annot.yml at end lol~
 
 #### Hard mode: Install programs manually and add to $PATH, and download latest SnpEff release as directory within your working directory
-1. Install each dependency manually, and ensure that all programs (except SnpEff) have been added to your $PATH, e.g., `which java` produces `/path/to/java`. If you are not comfortable doing this step, I suggest **Easy mode**^^.
+1. Install each dependency manually, and ensure that all programs (except SnpEff) have been added to your $PATH, e.g., `which java` produces `/path/to/java`. 
+```
+export PATH=$PATH:/path/to/directory/containing/java
+export PATH=$PATH:/path/to/directory/containing/agat
+```
+If you are not comfortable doing this step, I suggest [Easy mode](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory)^^.
 
 2. Download SnpEff to your working directory
 ```
@@ -46,7 +52,7 @@ wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
 unzip snpEff_latest_core.zip
 ```
 
-## Configure pipeline
+## Configuration
 Edit `mut_annot.config` with paths to:
 * Anaconda conda.sh file (e.g., `path/to/<anaconda-version>/etc/profile.d/conda.sh`)
 * Reference genome
@@ -61,7 +67,7 @@ Each step of the pipeline will first take the path to a config file as the first
 The entire pipeline can be run either with `bash` or with SLURM's `sbatch`. Each script of the pipeline has built-in options to SLURM, but you can modify these with `sbatch [options]` (recommended) or by editing the `#SBATCH` headers of each script (not recommended). See the [documentation](https://slurm.schedmd.com/sbatch.html) for more information on `sbatch` options. 
 > Using SLURM to execute the pipeline is recommended, if possible, as some of these scripts can run for upwards of 10 hours and require memory allocations >8g.
 
-In the directory *containing* the `snpEff/` directory you just downloaded, i.e., the directory just *above* it, `/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository (recommended):
+In the directory *containing* the `snpEff/` directory you [just downloaded](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory), i.e., the directory just *above* it, `/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository (recommended):
 ### 1. Build SnpEff database for *S. latissima*
 ```
 bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]

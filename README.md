@@ -2,7 +2,7 @@
 A pipeline to detect and annotate the effects of deleterious mutations in *S. latissima* whole genome sequencing data.
 
 ## Installation
-Clone repository:
+Clone and enter repository:
 ```
 git clone https://github.com/kellywithsword/s-latissima-mutation-annotation.git
 cd s-latissima-mutation-annotation

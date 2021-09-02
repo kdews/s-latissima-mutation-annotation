@@ -49,17 +49,24 @@ java --version
 cd snpEff
 if [[ -f $vcf_basename_unzip ]]
 then
-	echo "Detected VCF file: $vcf_basename_unzip"
+	echo "Detected VCF file: ${vcf_basename_unzip}."
+elif [[ -f $vcf_basename ]] 
+then
+	echo "Detected zipped VCF file: ${vcf_basename}. Unzipping..."
+	gunzip $vcf_basename
 else
 	echo "Copying input VCF file $vcf to $(pwd)..."
-	rsync $vcf .
+	rsync --verbose --progress $vcf .
+	echo "Unzipping ${vcf}..."
 	gunzip $vcf_basename
 fi
 
 # Run SnpEff annotation
 # Default Java memory=8g, unless memory is specified by SLURM
 [[ ${SLURM_MEM_PER_NODE} ]] && \
-mem="$(( 85 * $SLURM_MEM_PER_NODE / 1000 ))g" || \
+mem="$(( 85 * $SLURM_MEM_PER_NODE / 100000 ))g" || \
 mem=8g
-java -Xmx${mem} -jar snpEff.jar ${genome_base} $vcf_basename_unzip > ${vcf_base}.ann.vcf
+echo "Java memory set to $mem"
+echo "Running SnpEff on $vcf_basename_zip using $genome_base database build..."
+java -Xmx${mem} -jar snpEff.jar -v ${genome_base} $vcf_basename_unzip > ${vcf_base}.ann.vcf
 

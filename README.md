@@ -72,6 +72,7 @@ In the directory *containing* the `snpEff/` directory you [just downloaded](#eas
 ```
 bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]
 ```
+This step uses the input *S. latissima* annotation file to correlate the transcript IDs in the CDS and protein FASTAs wih the annotation file. You can view the matrix extracted from the annotation file, `annotation_index.txt`, to inspect the relationship between IDs in the annotation file and the FASTAs.
 
 ### 2. Run SnpEff variant annotation on *S. latissima* VCF
 ```

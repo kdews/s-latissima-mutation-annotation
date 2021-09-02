@@ -92,12 +92,13 @@ HTML file with extensive summary of SnpEff annotations in your VCF file.
 Examples:
 
 1. Plot of variant frequency by region (relative to genes)
+
 ![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/variant_type_freqs.png)
 
 2. Summary of functional classes of all variants
-![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
 
-See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml) for more information.
+![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
+See the [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml) of the SnpEff summary HTLM for more information.
 ```
 snpEff_genes.txt
 ```

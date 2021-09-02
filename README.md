@@ -5,6 +5,7 @@ A pipeline to detect and annotate the effects of deleterious mutations in *S. la
 Clone repository:
 ```
 git clone https://github.com/kellywithsword/s-latissima-mutation-annotation.git
+cd s-latissima-mutation-annotation
 ```
 
 ## Dependencies
@@ -12,7 +13,7 @@ git clone https://github.com/kellywithsword/s-latissima-mutation-annotation.git
 * [SnpEff](https://pcingola.github.io/SnpEff/) (>=v5.0c)
 * [AGAT](https://github.com/NBISweden/AGAT) (v0.8.0)
 
-#### Easy mode: Create Anaconda environment from YAML, and download latest SnpEff release as directory in working directory
+#### Easy mode: Create Anaconda environment from provided YAML, and download latest SnpEff release as directory in working directory
 1. If you haven't already, install the lastest version of [Anaconda](https://www.anaconda.com/)
 > Note: This pipeline will attempt to source Anaconda from the `$conda_sh` environment variable set in `mut_annot.config`. **Please set** `$conda_sh` to `path/to/<anaconda-version>/etc/profile.d/conda.sh` in `mut_annot.config`. If you are installing Anaconda for the first time, now would be a good time to find this path.
 2. Create Anaconda env from `mut_annot.yml`
@@ -48,7 +49,7 @@ Edit `mut_annot.config` with paths to:
 Each step of the pipeline will first take the path to a config file as the first positional argument ($1); if one is not provided, it will then look for `mut_annot.config` in your current directory. 
 
 ## Run pipeline
-In the directory *containing* the `snpEff/` directory you just downloaded (i.e., the directory just *above* it):
+In the directory *containing* the `snpEff/` directory you just downloaded, i.e., the directory just *above* it (`/path/to/s-latissima-mutation-annotation` if you are running from within the repository):
 ### 1. Build SnpEff database for *S. latissima*
 ```
 sbatch build_SnpEff_db.sbatch </path/to/mut_annot.config>

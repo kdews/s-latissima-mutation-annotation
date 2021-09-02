@@ -6,7 +6,7 @@
 #SBATCH -o %x.log
 
 # Correct FASTA IDs in protein.fa and cds.fa using genes.gtf
-printf "%s\n" "\
+echo "\
 ---------------------FIX CDS AND PROTEIN FASTA IDS WITH GTF---------------------
 
 IMPORTANT NOTE: This script will only perform the ID correction for 

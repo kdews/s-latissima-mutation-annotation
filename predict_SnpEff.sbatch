@@ -52,7 +52,13 @@ then
 else
 	echo "Copying input VCF file $vcf to $(pwd)..."
 	rsync $vcf .
+	gunzip $vcf_basename
 fi
 
-
+# Run SnpEff annotation
+# Default Java memory=8g, unless memory is specified by SLURM
+[[ ${SLURM_MEM_PER_NODE} ]] && \
+mem="$(( 85 * $SLURM_MEM_PER_NODE / 1000 ))g" || \
+mem=8g
+java -jar snpEff.jar -Xmx${mem} $vcf_basename_unzip > ${vcf_base}.ann.vcf
 

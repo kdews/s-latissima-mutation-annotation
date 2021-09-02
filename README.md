@@ -49,7 +49,7 @@ Edit `mut_annot.config` with paths to:
 Each step of the pipeline will first take the path to a config file as the first positional argument ($1); if one is not provided, it will then look for `mut_annot.config` in your current directory. 
 
 ## Run pipeline
-In the directory *containing* the `snpEff/` directory you just downloaded, i.e., the directory just *above* it (`/path/to/s-latissima-mutation-annotation` if you are running from within the repository):
+In the directory *containing* the `snpEff/` directory you just downloaded, i.e., the directory just *above* it (`/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository):
 ### 1. Build SnpEff database for *S. latissima*
 ```
 sbatch build_SnpEff_db.sbatch </path/to/mut_annot.config>

@@ -48,14 +48,13 @@ Edit `mut_annot.config` with paths to:
 Each step of the pipeline will first take the path to a config file as the first positional argument ($1); if one is not provided, it will then look for `mut_annot.config` in your current directory. 
 
 ## Run pipeline
+In the directory containing the `snpEff/` directory you just downloaded, i.e., the directory *above* `snpEff/`:
 ### 1. Build SnpEff database for *S. latissima*
-Run:
 ```
 sbatch build_SnpEff_db.sbatch </path/to/mut_annot.config>
 ```
 
 ### 2. Run SnpEff on *S. latissima* VCF
-Run:
 ```
 sbatch predict_SnpEff.sbatch </path/to/mut_annot.config>
 ```

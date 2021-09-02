@@ -81,10 +81,12 @@ bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 
 ## Results
 Results of the analysis can be found in the `snpEff/` directory.
+#### SnpEff annotated VCF file
 ```
 <your_vcf_name>.ann.vcf
 ```
 SnpEff annotated VCF file. See the [documentation](https://pcingola.github.io/SnpEff/se_inputoutput/#ann-field-vcf-output-files) of SnpEff values in the ANN field to understand the putative effect(s) of each variant in your VCF file.
+#### SnpEff HTML summary file
 ```
 snpEff_summary.html
 ```
@@ -99,6 +101,7 @@ HTML file with extensive summary of SnpEff annotations in your VCF file. Here ar
 ![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
 
 See the [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml) of the SnpEff summary HTLM for more information.
+#### SnpEff gene counts summary file
 ```
 snpEff_genes.txt
 ```

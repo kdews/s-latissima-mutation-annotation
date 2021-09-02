@@ -73,7 +73,7 @@ bash/sbatch [options] predict_SnpEff.sh [/path/to/mut_annot.config]
 ```
 
 ## Debugging & Troubleshooting
-The output at each step of the pipeline can be saved to a log file by specifying one to SLURM `sbatch -o out.log` or by directing the output to a file (if running with `bash`), like so: `bash <script> > out.log`.
+The output at each step of the pipeline can be saved to a log file by specifying one to SLURM `sbatch -o out.log <script>` or by directing the output to a file (if running with `bash`), like so: `bash <script> > out.log`.
 
 You can use these to debug any errors you receive running the pipeline, or email me at kdeweese@usc.edu.
 

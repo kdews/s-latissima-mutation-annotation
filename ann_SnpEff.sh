@@ -2,16 +2,17 @@
 #SBATCH -p cegs
 #SBATCH --mem=25gb
 #SBATCH --time=2-0
-#SBATCH -J build_SnpEff_db
+#SBATCH -J ann_SnpEff
 #SBATCH -o %x.log
 
 # Source configuration file
 [[ $1 ]] && config_file=$1 || config_file=mut_annot.config
-if [[ $config_file ]] && [[ -f $config_file]]
+if [[ $config_file ]] && [[ -f $config_file ]]
 then
 	source $config_file
 else
-	echo "Error - please provide config file. $config not found."
+	echo "Error - please provide config file. \
+$config_file not found."
 	exit 1
 fi
 
@@ -60,5 +61,5 @@ fi
 [[ ${SLURM_MEM_PER_NODE} ]] && \
 mem="$(( 85 * $SLURM_MEM_PER_NODE / 1000 ))g" || \
 mem=8g
-java -jar snpEff.jar -Xmx${mem} $vcf_basename_unzip > ${vcf_base}.ann.vcf
+java -Xmx${mem} -jar snpEff.jar ${genome_base} $vcf_basename_unzip > ${vcf_base}.ann.vcf
 

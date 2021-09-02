@@ -39,7 +39,7 @@ unzip snpEff_latest_core.zip
 > @ Kelly: remember to add final mut\_annot.yml at end lol~
 
 #### Hard mode: Install programs manually and add to $PATH, and download latest SnpEff release as directory within your working directory
-1. Install each dependency manually, and ensure that all programs (except SnpEff) have been added to your $PATH, e.g., `which java` produces `/path/to/java`. 
+1. Install each dependency manually, and ensure that all programs (except SnpEff) have been added to your $PATH, e.g., running `which java` produces `/path/to/java`. 
 ```
 export PATH=$PATH:/path/to/directory/containing/java
 export PATH=$PATH:/path/to/directory/containing/agat

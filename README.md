@@ -69,7 +69,7 @@ bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]
 
 ### 2. Run SnpEff on *S. latissima* VCF
 ```
-bash/sbatch [options] predict_SnpEff.sh [/path/to/mut_annot.config]
+bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 ```
 
 ## Debugging & Troubleshooting

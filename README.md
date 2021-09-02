@@ -80,14 +80,27 @@ bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 
 ## Results
 Results of the analysis can be found in the `snpEff/` directory.
-`<your_vcf_name>.ann.vcf`
+```
+<your_vcf_name>.ann.vcf
+```
 SnpEff annotated VCF file. See the [documentation](https://pcingola.github.io/SnpEff/se_inputoutput/#ann-field-vcf-output-files) of SnpEff values in the ANN field to understand the putative effect(s) of each variant in your VCF file.
-`snpEff_summary.html`
-HTML file with extensive summary of SnpEff annotations in your VCF file. 
+```
+snpEff_summary.html
+```
+HTML file with extensive summary of SnpEff annotations in your VCF file.
 
+Examples:
 
-See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml).
-`snpEff_genes.txt`
+1. Plot of variant frequency by region (relative to genes)
+![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/variant_type_freqs.png)
+
+2. Summary of functional classes of all variants
+![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
+
+See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml) for more information.
+```
+snpEff_genes.txt
+```
 Tab-delimited text file with counts of number of variants affecting each transcript and gene in the reference. See [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#gene-counts-summary-snpeff_genestxt).
 
 ## Debugging & Troubleshooting

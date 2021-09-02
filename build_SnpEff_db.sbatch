@@ -6,7 +6,14 @@
 #SBATCH -o %x.log
 
 # Source configuration file
-source build_SnpEff_db.config
+config_file=$1
+if [[ $config_file ]] && [[ -f $config_file]]
+then
+	source $config_file
+else
+	echo "Error - please provide config file. $config not found."
+fi
+# Extract names from input files
 genome_basename=$(basename -- $genome)
 genome_basename_unzip=`echo $genome_basename | sed 's/\.gz//g'`
 genome_base=`echo $genome_basename | sed 's/\..*//g'`
@@ -29,19 +36,29 @@ else
 	cd snpEff
 fi
 echo "Writing files to $(pwd)"
-# Attemp to source anaconda from $conda_sh
-source $conda_sh && conda --version || { echo "Error on Anaconda source from \
-${conda_sh}. Exiting..."; exit 1; }
-[[ $? -eq 0 ]] && echo "Establishing java environment through Anaconda..." || \
-{ echo "$? Error on Anaconda source from ${conda_sh}. Exiting..."; exit 1; }
-# Attempt to detect java env in anaconda architecture
-[[ $(conda info -e | grep "/envs/java") ]] && echo "Java env found! Loading..." \
-|| { echo "No Java env found. Exiting..."; exit 1; } 
-# Load java (must be >= v1.8)
-conda activate java
+
+# Optional: Anaconda configuration
+# Attempt to source Anaconda from $conda_sh (if provided)
+if [[ $conda_sh ]] && [[ -f $conda_sh ]]
+then
+	source $conda_sh
+	[[ $? -eq 0 ]] && \
+echo "Anaconda source successful." || \
+{ echo "Error on Anaconda source from ${conda_sh}. Exiting..."; exit 1; }
+	conda activate mut_annot
+	[[ $? -eq 0 ]] && \
+echo "Activation of conda env 'mut_annot' successful." || \
+{ echo "Error activating conda env 'mut_annot'. Exiting..."; exit 1; }
+else
+	echo "conda.sh file not detected, expecting dependencies in PATH."
+fi
+
+# Test Java install (must be >= v1.8)
 java --version
 [[ $? -eq 0 ]] && echo "Java successfully loaded." || \
-{ echo "Error loading Java from anaconda*/envs/java. Exiting..."; exit 1; }
+{ echo "Error arose while testing Java install. Exiting..."; exit 1; }
+
+# Copy, unzip and rename all input files, as necessary
 # Create snpEff "data" directory by initiating random download (if needed)
 [[ -d data ]] || java -jar snpEff.jar download -v GRCh37.75
 # Create directory for new genome and annotation files
@@ -54,27 +71,28 @@ cd $genome_base
 rsync $genome .; \
 gunzip $genome_basename; \
 mv $genome_basename_unzip sequences.fa; }
-# Copy annotation file, uncompress, convert to GTF and rename to 
-# "genes.gtf" (if needed)
+# Copy annotation file, uncompress, and rename to "genes.gtf" (if needed)
+[[ -f genes.${annot_filetype} ]] || [[ -f genes.gtf ]] || \
+{ echo "Copying $annot to genes.${annot_filetype}"; \
+rsync $annot .; \
+gunzip $annot_basename; \
+mv $annot_basename_unzip genes.${annot_filetype}; }
+# Convert input GFF3 files to GTF3 (if provided)
 if [[ -f genes.gtf ]]
 then
 	echo "Using genes.gtf to build SnpEff database."
 elif [[ $annot_filetype = "gff3" ]]
 then
-	rsync $annot .
-	gunzip $annot_basename
-	conda activate agat
-	agat_convert_sp_gff2gtf.pl --gff $annot_basename_unzip --output \
-genes.gtf > agat_convert_sp_gff2gtf.log 2>&1
+	agat_convert_sp_gff2gtf.pl --gff genes.gff3 --output \
+genes.gtf > agat_convert_sp_gff2gtf.log 2>&1 
 	[[ $? -ne 0 ]] && { echo "Error on AGAT conversion step. \
 Exiting..."; exit 1; }
-	rm $annot_basename_unzip
-	conda activate java
+	rm genes.gff3
 else
-	printf "\
+	printf "%s\n" "\
 Error - annotation file format $annot cannot be handled. This script\n\
-only accepts GFF3 files as input.\n\n\
-REQUIRED: GFF3 files MUST end in '.gff3', not '.gff'."
+only accepts GFF3 or GTF3 files as input.\n\n\
+REQUIRED: GFF3 files MUST end in '.gff3', not '.gff'. Sowwy :("
 	exit 1
 fi
 # Copy protein FASTA, uncompress, then rename to "protein.fa" (if needed)
@@ -90,7 +108,7 @@ rsync $cds .; \
 gunzip $cds_basename; \
 mv $cds_basename_unzip cds.fa; }
 
-# Fix IDs in protein and CDS FASTAs using GTF file
+# Fix IDs in protein and CDS FASTAs using GTF file (if needed)
 cd ../../..
 num_prot=$(grep -c ">" snpEff/data/${genome_base}/protein.fa)
 num_cds=$(grep -c ">" snpEff/data/${genome_base}/cds.fa)
@@ -99,7 +117,7 @@ $(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
 [[ $num_cds -eq \
 $(grep -c ">mRNA" snpEff/data/${genome_base}/cds.fa) ]] &&
 echo "FASTA IDs already fixed." || \
-sbatch fix_ids.sh $genome_base
+sbatch ${scripts_dir}fix_ids.sh $genome_base
 until [[ $num_prot -eq \
 $(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
 [[ $num_cds -eq \
@@ -123,7 +141,7 @@ line_num=$(( $line_num + 2 ))
 sed -i "$line_num a # $species genome, $genome_info\n\
 ${genome_base}.genome : ${species}\n" snpEff.config; }
 
-# Build SnpEff database for species genome
+# Build SnpEff database for species genome (if it doesn't exist)
 if [[ -f ${genome_base}.build ]]
 then
 	echo "Using genome build ${genome_base}.build."
@@ -133,8 +151,4 @@ else
 echo "Building SnpEff database for $species (${genome_base})..." && \
 java -jar snpEff.jar build -v $genome_base 2>&1 | tee ${genome_base}.build
 fi
-
-
-
-
 

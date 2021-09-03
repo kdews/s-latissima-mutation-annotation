@@ -20,8 +20,8 @@ sbatch gene_list_blast.sh [config_file]
                      'mut_annot.config' or be specified by the first 
                      positional parameter (i.e., \$1)
 
-Enviornment variable \$fastas in \$config_file must be set to multi-FASTA 
-containing sequences of genes of interest from related species.
+Enviornment variable \$candidate_fasta in \$config_file must be set to 
+multi-FASTA containing sequences of genes of interest from related species.
 
 Requires NCBI command-line BLAST (https://www.ncbi.nlm.nih.gov/books/NBK52640)"
 	exit 0
@@ -38,36 +38,38 @@ else
 fi
 
 # Optional: Anaconda configuration
-# Attempt to source Anaconda from $conda_sh (if provided)
-if [[ $conda_sh ]] && [[ -f $conda_sh ]]
-then
-	source $conda_sh
-	[[ $? -eq 0 ]] && \
-echo "Anaconda source successful." || \
-{ echo "Error on Anaconda source from ${conda_sh}. Exiting..."; exit 1; }
-	conda activate mut_annot
-	[[ $? -eq 0 ]] && \
-echo "Activation of conda env 'mut_annot' successful." || \
-{ echo "Error activating conda env 'mut_annot'. Exiting..."; exit 1; }
-else
-	echo "conda.sh file not detected, expecting dependencies in PATH."
-fi
+[[ $conda_sh ]] && source_conda $conda_sh
+
+# Optional: Multithreading settings
+[[ ${SLURM_CPUS_PER_TASK} ]] && threads=${SLURM_CPUS_PER_TASK} || threads=1
 
 # Define and create output directory (if needed)
-outdir=blast_results
+outdir=blast_results/
 [[ ! -d $outdir ]] && mkdir $outdir
 
-# Input filenames
-[[ $fastas ]] || \
-{ echo "Error - no input FASTA provided. Exiting..."; \
-exit 1; }
+# Inputs
+# Molecule type
 molecule_type='prot'
-# Reformats databases given as filepaths and with file extensions
-input_db=$prot
-input_db_basename=$(basename -- $input_db)
-input_db_basename_unzip=$(echo $input_db_basename | sed 's/\.gz//g')
-db=$(echo $input_db_basename | sed 's/\..*//g')
-db_ext=$(echo $input_db_basename | sed 's/.*\.//g')
+# Query
+[[ -z $query ]] && { echo "Error - no input FASTA provided. Exiting..."; \
+exit 1; }
+# Database
+[[ -z $input_db ]] || { echo "Error - no input BLAST database provided. \
+Exiting..."; exit 1; }
+[[ -z $db ]] || { echo "Error - no input BLAST database provided. \
+Exiting..."; exit 1; }
+
+# Determine which blast command to use
+if [[ $molecule_type = "nucl" ]]
+then
+	blast="blastn"
+elif [[ $molecule_type = "prot" ]]
+then
+	blast="blastp"
+else
+	echo "Error, check that <molecule_type> is spelled correctly."
+	exit 1
+fi
 
 # Create BLAST database (if needed)
 echo "Checking BLAST database ${db}..."

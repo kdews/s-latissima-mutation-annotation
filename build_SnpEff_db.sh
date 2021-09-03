@@ -15,18 +15,6 @@ else
 	exit 1
 fi
 
-# Extract names from input files
-genome_basename=$(basename -- $genome)
-genome_basename_unzip=$(echo $genome_basename | sed 's/\.gz//g')
-genome_base=$(echo $genome_basename | sed 's/\..*//g')
-annot_basename=$(basename -- $annot)
-annot_basename_unzip=$(echo $annot_basename | sed 's/\.gz//g')
-annot_filetype=$(echo $annot_basename_unzip |  sed 's/.*\.//g')
-prot_basename=$(basename -- $prot)
-prot_basename_unzip=$(echo $prot_basename | sed 's/\.gz//g')
-cds_basename=$(basename -- $cds)
-cds_basename_unzip=$(echo $cds_basename | sed 's/\.gz//g')
-
 # Check for SnpEff installation and change into snpEff directory
 if [[ -d snpEff ]]
 then
@@ -38,20 +26,7 @@ fi
 echo "Building SnpEff database in $(pwd)"
 
 # Optional: Anaconda configuration
-# Attempt to source Anaconda from $conda_sh (if provided)
-if [[ $conda_sh ]] && [[ -f $conda_sh ]]
-then
-	source $conda_sh
-	[[ $? -eq 0 ]] && \
-echo "Anaconda source successful." || \
-{ echo "Error on Anaconda source from ${conda_sh}. Exiting..."; exit 1; }
-	conda activate mut_annot
-	[[ $? -eq 0 ]] && \
-echo "Activation of conda env 'mut_annot' successful." || \
-{ echo "Error activating conda env 'mut_annot'. Exiting..."; exit 1; }
-else
-	echo "conda.sh file not detected, expecting dependencies in PATH."
-fi
+[[ $conda_sh ]] && source_conda $conda_sh
 
 # Test Java install (must be >= v1.8)
 java --version

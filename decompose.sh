@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -p cegs
 #SBATCH --mem=25gb
-#SBATCH --time=2-0
-#SBATCH -J vcf_extract
+#SBATCH --time=05:00:00
+#SBATCH -J decompose
 #SBATCH -o %x.log
 
 # Source configuration file
@@ -18,28 +18,44 @@ fi
 # Optional: Anaconda configuration
 [[ $conda_sh ]] && source_conda $conda_sh
 
-# Define BED file
-bed=extract_from_vcf.bed
-
-# Create BED file to use with VCFtools (if needed)
-if [[ -f $bed ]] && (( $(cat $bed | wc -l) > 1 ))
+# Copy genome to working directory (if it doesn't exist)
+if [[ -f $genome_basename_unzip ]]
 then
-	echo "Using BED file ${bed}..."
+	echo "Using genome: $genome_basename_unzip"
+elif [[ -f $genone_basename ]]
+then
+	echo "Unzipping genome ${genome_basename}..."
 else
-	if [[ -f $gene_list ]]
-	then
-		echo "Creating BED file $bed from ${gene_list}..."
-		awk '{print $4,$5,$6}' $gene_list > $bed
-	else
-		echo "Error - no BED file ($bed) detected, and no gene list \
-($gene_list) to create it from. Exiting... "
-		exit 1
-	fi
+	echo "Copying $genome to $(pwd)"
+	rsync $genome .
+	gunzip $genome_basename
 fi
 
-# Subset regions of interest from annotated VCF into new VCF file
-vcftools --vcf snpEff/${vcf_base}.ann.vcf --bed $bed \
---recode --recode-INFO-all \
---out ${vcf_base}.ann.gene_list
+# Copy VCF to working directory (if it doesn't exist)
+if [[ -f $vcf_basename_unzip ]]
+then
+	echo "Detected VCF file: ${vcf_basename_unzip}."
+elif [[ -f $vcf_basename ]] 
+then
+	echo "Detected zipped VCF file: ${vcf_basename}. Unzipping..."
+	gunzip $vcf_basename
+else
+	echo "Copying input VCF file $vcf to $(pwd)..."
+	rsync --verbose --progress $vcf .
+	echo "Unzipping ${vcf}..."
+	gunzip $vcf_basename
+fi
 
-# --max-maf 0.1 if VCF is massive
+# Run vt decompose on input VCF
+echo "Decomposing ${vcf_basename_unzip}..."
+vt decompose -s \
+-o ${vcf_base}.decomp.vcf \
+$vcf_basename_unzip
+
+# Run vt normalize on decomposed VCF
+echo "Normalizing ${vcf_base}.decomp.vcf..."
+vt normalize \
+-r $genome_basename_unzip \
+-o ${vcf_base}.decomp.norm.vcf \
+${vcf_base}.decomp.vcf
+

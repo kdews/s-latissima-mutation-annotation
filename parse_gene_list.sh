@@ -1,16 +1,87 @@
-for i in `grep "Ec-" blast_results/candidate_genes_vs_SlaSLCT1FG3_1_GeneCatalog_proteins_20210608.prot.blast.tab | awk '{print $2}' | sort -u`; do printf "%s\t%s\n" "$i" "Ecto" >> gene.list; done
-for i in `grep "PGA" blast_results/candidate_genes_vs_SlaSLCT1FG3_1_GeneCatalog_proteins_20210608.prot.blast.tab | awk '{print $2}' | sort -u`; do printf "%s\t%s\n" "$i" "Macro" >> gene.list; done
+#!/bin/bash
+#SBATCH -p cegs
+#SBATCH --mem=500mb
+#SBATCH --time=01:00:00
+#SBATCH -J parse_gene_list
+#SBATCH -o %x.log
 
-sed -i "s/-/|/g" gene.list
-awk '{print $1}' gene.list | awk 'BEGIN {FS="|"} ; {print $3}' | paste - gene.list > gene2.list
+# Source configuration file
+[[ $1 ]] && config_file=$1 || config_file=mut_annot.config
+if [[ $config_file ]] && [[ -f $config_file ]]
+then
+	source $config_file
+else
+	echo "Error - please provide config file. $config_file not found."
+	exit 1
+fi
 
-for i in $(grep "DE" gene2.list | awk '{print $1}'); do line=$(grep $'\tgene\t' *gff3 | grep "transcriptId=${i};"); coords=$(echo "$line" | awk '{print $1,$4,$5}'); printf "%s\t%s\n" "$i" "$coords"; done > DE.coords
-for i in $(grep "Spo11" gene2.list | awk '{print $1}'); do line=$(grep $'\tgene\t' *gff3 | grep "transcriptId=${i}"); coords=$(echo "$line" | awk '{print $1,$4,$5}'); printf "%s\t%s\n" "$i" "$coords"; done > Spo11.coords
-for i in $(grep "Macro\|Ecto" gene2.list | awk '{print $1}'); do line=$(grep $'\tgene\t' *gff3 | grep "proteinId=${i};"); coords=$(echo "$line" | awk '{print $1,$4,$5}'); printf "%s\t%s\n" "$i" "$coords"; done > macro_ecto.coords
-cat DE.coords Spo11.coords macro_ecto.coords > all.coords
-sed -i "s/ /\t/g" coords/all.coords
+# Optional: Anaconda configuration
+[[ $conda_sh ]] && source_conda $conda_sh
 
+# Copy and unzip annotation file (if needed)
+if [[ -f $annot_basename_unzip ]]
+then
+	echo "Using annotation file $annot_basename_unzip (WARNING: Assuming GFF3)"
+elif [[ -f $annot_basename ]]
+then
+	echo "Unzipping $annot_basename (WARNING: Assuming GFF3)"
+	gunzip $annot_basename
+else
+	echo "Copying $annot to $(pwd)"
+	rsync $annot .
+	echo "Unzipping $annot_basename (WARNING: Assuming GFF3)"
+	gunzip $annot_basename
+fi
 
-echo "#ID	full_ID	Source	Chr	Start	End" > final_gene.list
-awk '{print $2,$3,$4}' coords/all.coords | paste gene_lists/gene2.list - > final_gene.list
-sed -i "s/ /\t/g" final_gene.list
+# Initialize gene list file with header
+echo "#Chr	Start	End	Source E_value	gene_ID	\
+transcript_ID	protein_ID	protein_product" > $gene_list
+
+# Search for known patterns in annotation file
+for i in $(seq 1 1 $(grep -c -i "Spo11\|mei" $annot_basename_unzip))
+do
+	line=$(grep -i "Spo11\|mei" $annot_basename_unzip | sed -n ${i}p)
+	coords=$(echo "$line" | awk '{print $1,$4,$5}' | sed "s/ /\t/g")
+	ids=$(echo "$line" | awk 'BEGIN {FS="\t"} {print $9}')
+	gene_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $1}' | sed "s/.*=//g")
+	trans_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $6}' | sed "s/.*=//g")
+	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
+	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+"$coords" "annotation" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
+done
+# DE list
+type=transcript
+for i in $(cat $DE_list)
+do
+	num=$(echo "$i" | awk 'BEGIN {FS="|"} {print $3}')
+	line=$(grep $'\tgene\t' $annot_basename_unzip | grep "${type}Id=${num};")
+	coords=$(echo "$line" | awk '{print $1,$4,$5}' | sed "s/ /\t/g")
+	ids=$(echo "$line" | awk 'BEGIN {FS="\t"} {print $9}')
+	gene_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $1}' | sed "s/.*=//g")
+	trans_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $6}' | sed "s/.*=//g")
+	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
+	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+"$coords" "DE" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
+done
+# Input tabulated BLAST results
+in_blast=${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab
+type=protein
+# Undo "|" replacements in FASTA IDs from BLAST run
+for i in $(seq 1 1 $(cat $in_blast | wc -l))
+do
+	blast_line=$(sed -n ${i}p $in_blast | sed "s/-/|/g")
+	blast_info=$(echo "$blast_line" | awk '{print $1,$3}' | sed "s/ /\t/g")
+	num=$(echo "$blast_line" | awk '{print $2}' | awk 'BEGIN {FS="|"} {print $3}')
+	line=$(grep $'\tgene\t' $annot_basename_unzip | grep "${type}Id=${num};")
+	coords=$(echo "$line" | awk '{print $1,$4,$5}' | sed "s/ /\t/g")
+	ids=$(echo "$line" | awk 'BEGIN {FS="\t"} {print $9}')
+	gene_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $1}' | sed "s/.*=//g")
+	trans_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $6}' | sed "s/.*=//g")
+	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
+	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
+	printf "%s\t%s\t%s\t%s\t%s\t%s\n" \
+"$coords" "$blast_info" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
+done
+

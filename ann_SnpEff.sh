@@ -24,28 +24,21 @@ java --version
 [[ $? -eq 0 ]] && echo "Java successfully loaded." || \
 { echo "Error arose while testing Java install. Exiting..."; exit 1; }
 
-# Copy VCF to snpEff directory (if it doesn't exist)
-cd snpEff
-if [[ -f $vcf_basename_unzip ]]
-then
-	echo "Detected VCF file: ${vcf_basename_unzip}."
-elif [[ -f $vcf_basename ]] 
-then
-	echo "Detected zipped VCF file: ${vcf_basename}. Unzipping..."
-	gunzip $vcf_basename
-else
-	echo "Copying input VCF file $vcf to $(pwd)..."
-	rsync --verbose --progress $vcf .
-	echo "Unzipping ${vcf}..."
-	gunzip $vcf_basename
-fi
+# Set input VCF file
+input_vcf=../${vcf_base}.decomp.norm.vcf
 
-# Run SnpEff annotation
 # Default Java memory=8g, unless memory is specified by SLURM
 [[ ${SLURM_MEM_PER_NODE} ]] && \
 mem="$(( 85 * $SLURM_MEM_PER_NODE / 100000 ))g" || \
 mem=8g
 echo "Java memory set to $mem"
-echo "Running SnpEff on $vcf_basename_zip using $genome_base database build..."
-java -Xmx${mem} -jar snpEff.jar -v ${genome_base} $vcf_basename_unzip > ${vcf_base}.ann.vcf
-
+# Run SnpEff annotation
+cd snpEff
+if [[ -f $input_vcf ]]
+then
+	echo "Running SnpEff on $input_vcf using $genome_base database build..."
+	java -Xmx${mem} -jar snpEff.jar -v ${genome_base} $input_vcf > ${vcf_base}.ann.vcf
+else
+	echo "Error - $input_vcf file not detected."
+	exit 1
+fi

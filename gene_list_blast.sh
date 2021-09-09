@@ -43,20 +43,19 @@ fi
 # Optional: Multithreading settings
 [[ ${SLURM_CPUS_PER_TASK} ]] && threads=${SLURM_CPUS_PER_TASK} || threads=1
 
-# Define and create output directory (if needed)
-outdir=blast_results/
-[[ ! -d $outdir ]] && mkdir $outdir
-
 # Inputs
 # Molecule type
 molecule_type='prot'
 # Query
+echo "Query set to: $query"
 [[ -z $query ]] && { echo "Error - no input FASTA provided. Exiting..."; \
 exit 1; }
 # Database
-[[ -z $input_db ]] || { echo "Error - no input BLAST database provided. \
+echo "Input database file set to: $input_db"
+[[ -z $input_db ]] && { echo "Error - no input BLAST database provided. \
 Exiting..."; exit 1; }
-[[ -z $db ]] || { echo "Error - no input BLAST database provided. \
+echo "Database set to: $db"
+[[ -z $db ]] && { echo "Error - no input BLAST database provided. \
 Exiting..."; exit 1; }
 
 # Determine which blast command to use
@@ -100,14 +99,14 @@ then
 	echo "Treating query as zipped FASTA."
 	echo "Running $blast on $query with ${db}..."
 	zcat $query | $blast -num_threads $threads -db $db \
--out ${outdir}${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab \
--outfmt "6 qseqid sseqid pident length"
+-out ${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab \
+-outfmt "6 qseqid sseqid evalue"
 else
 	echo "Running $blast on $query with ${db}..."
 	$blast -num_threads $threads -query $query -db $db \
--out ${outdir}${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab \
--outfmt "6 qseqid sseqid pident length"
+-out ${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab \
+-outfmt "6 qseqid sseqid evalue"
 fi
 
-echo "$blast run finished. Results are in:
+[[ $? -eq 0 ]] && echo "$blast run finished. Results are in:
 ${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab"

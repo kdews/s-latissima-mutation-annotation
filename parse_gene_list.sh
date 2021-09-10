@@ -50,8 +50,8 @@ do
 	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
 	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
 	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-"$coords" "annotation" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
-done
+"$coords" "annotation" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product"
+done >> $gene_list
 # DE list
 echo "Adding differentially expressed genes..."
 type="transcript"
@@ -66,8 +66,8 @@ do
 	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
 	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
 	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-"$coords" "DE" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
-done
+"$coords" "DE" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product"
+done >> $gene_list
 # Input tabulated BLAST results
 echo "Adding BLAST results..."
 in_blast=${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab
@@ -89,6 +89,6 @@ do
 	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
 	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
 	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-"$coords" "$blast_source" "$blast_eval" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
-done
+"$coords" "$blast_source" "$blast_eval" "$gene_id" "$trans_id" "$prot_id" "$prot_product"
+done >> $gene_list
 

@@ -85,6 +85,9 @@ mv $cds_basename_unzip cds.fa; }
 
 # Fix IDs in protein and CDS FASTAs using GTF file (if needed)
 cd ../../..
+# Check if SLURM sbatch can be used for submission
+[[ $(which sbatch; echo $?) -eq 0 ]] && \
+submit=sbatch || submit=bash
 num_prot=$(grep -c ">" snpEff/data/${genome_base}/protein.fa)
 num_cds=$(grep -c ">" snpEff/data/${genome_base}/cds.fa)
 [[ $num_prot -eq \
@@ -92,7 +95,7 @@ $(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
 [[ $num_cds -eq \
 $(grep -c ">mRNA" snpEff/data/${genome_base}/cds.fa) ]] &&
 echo "FASTA IDs already fixed." || \
-sbatch ${scripts_dir}fix_ids.sh $genome_base
+$submit ${scripts_dir}fix_ids.sh $genome_base
 until [[ $num_prot -eq \
 $(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
 [[ $num_cds -eq \

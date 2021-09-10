@@ -34,10 +34,12 @@ else
 fi
 
 # Initialize gene list file with header
-echo "#Chr	Start	End	Source E_value	gene_ID	\
+echo "Creating $gene_list in $(pwd)..."
+echo "#Chr	Start	End	Source	E_value	gene_ID	\
 transcript_ID	protein_ID	protein_product" > $gene_list
 
 # Search for known patterns in annotation file
+echo "Adding known reproductive annotations..."
 for i in $(seq 1 1 $(grep -c -i "Spo11\|mei" $annot_basename_unzip))
 do
 	line=$(grep -i "Spo11\|mei" $annot_basename_unzip | sed -n ${i}p)
@@ -51,11 +53,12 @@ do
 "$coords" "annotation" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
 done
 # DE list
-type=transcript
+echo "Adding differentially expressed genes..."
+type="transcript"
 for i in $(cat $DE_list)
 do
 	num=$(echo "$i" | awk 'BEGIN {FS="|"} {print $3}')
-	line=$(grep $'\tgene\t' $annot_basename_unzip | grep "${type}Id=${num};")
+	line=$(grep $'\tgene\t' $annot_basename_unzip | grep "${type}Id=${num}$")
 	coords=$(echo "$line" | awk '{print $1,$4,$5}' | sed "s/ /\t/g")
 	ids=$(echo "$line" | awk 'BEGIN {FS="\t"} {print $9}')
 	gene_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $1}' | sed "s/.*=//g")
@@ -66,14 +69,18 @@ do
 "$coords" "DE" "NA" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
 done
 # Input tabulated BLAST results
+echo "Adding BLAST results..."
 in_blast=${query_no_path_or_ext}_vs_${db}.${molecule_type}.blast.tab
-type=protein
-# Undo "|" replacements in FASTA IDs from BLAST run
+type="protein"
 for i in $(seq 1 1 $(cat $in_blast | wc -l))
 do
-	blast_line=$(sed -n ${i}p $in_blast | sed "s/-/|/g")
-	blast_info=$(echo "$blast_line" | awk '{print $1,$3}' | sed "s/ /\t/g")
-	num=$(echo "$blast_line" | awk '{print $2}' | awk 'BEGIN {FS="|"} {print $3}')
+	blast_line=$(sed -n ${i}p $in_blast)
+	blast_source=$(echo "$blast_line" | awk '{print $1}')
+	blast_eval=$(echo "$blast_line" | awk '{print $3}')
+	# Test for low E-value for BLAST result
+	[[ $(echo "$blast_eval" | grep "e\-") ]] || continue
+	# Undo "|" replacements in FASTA IDs from BLAST run
+	num=$(echo "$blast_line" | sed "s/-/|/g" | awk '{print $2}' | awk 'BEGIN {FS="|"} {print $3}')
 	line=$(grep $'\tgene\t' $annot_basename_unzip | grep "${type}Id=${num};")
 	coords=$(echo "$line" | awk '{print $1,$4,$5}' | sed "s/ /\t/g")
 	ids=$(echo "$line" | awk 'BEGIN {FS="\t"} {print $9}')
@@ -81,7 +88,7 @@ do
 	trans_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $6}' | sed "s/.*=//g")
 	prot_id=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $5}' | sed "s/.*=//g")
 	prot_product=$(echo "$ids" | awk 'BEGIN {FS=";"} {print $4}' | sed "s/.*=//g")
-	printf "%s\t%s\t%s\t%s\t%s\t%s\n" \
-"$coords" "$blast_info" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+"$coords" "$blast_source" "$blast_eval" "$gene_id" "$trans_id" "$prot_id" "$prot_product" >> $gene_list
 done
 

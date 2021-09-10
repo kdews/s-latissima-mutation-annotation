@@ -44,8 +44,6 @@ fi
 [[ ${SLURM_CPUS_PER_TASK} ]] && threads=${SLURM_CPUS_PER_TASK} || threads=1
 
 # Inputs
-# Molecule type
-molecule_type='prot'
 # Query
 echo "Query set to: $query"
 [[ -z $query ]] && { echo "Error - no input FASTA provided. Exiting..."; \

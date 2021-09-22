@@ -46,7 +46,7 @@ unzip snpEff_latest_core.zip
 ```
 export PATH=$PATH:/path/to/directory/containing/java
 export PATH=$PATH:/path/to/directory/containing/agat
-export PATH=$PATH:/path/to/vt
+export PATH=$PATH:/path/to/directory/containing/vt
 export PATH=$PATH:/path/to/directory/containing/R
 ```
 If you are not comfortable doing this step, I suggest [Easy mode](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory)^^.

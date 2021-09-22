@@ -23,7 +23,10 @@ R --version
 [[ $? -ne 0]] && {echo "Error - check R installation. Exiting..."; exit 1}
 
 # Create R-friendly version of gene list
-if [[ -f $gene_list ]]
+if [[ -f $gene_list ]] && [[ -f $R_gene_list ]]
+then
+	echo "Found $R_gene_list"
+elif [[ -f $gene_list ]]
 then
 	sed "s/#//g" $gene_list > $R_gene_list
 else
@@ -31,6 +34,7 @@ else
 	exit 1
 fi
 # Run Rscript
+echo "Running Rscript on $simple_summ and ${R_gene_list}..."
 Rscript --vanilla ${scripts_dir}sterile_genotyping.R $simple_summ $R_gene_list \
 $annot_summ
 

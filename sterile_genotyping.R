@@ -1,4 +1,6 @@
 ## INITIALIZATION ##
+# Load required packages
+library(tidyverse)
 # Define input / output files
 args <- commandArgs(trailingOnly=TRUE)
 high_eff_file <- args[1]
@@ -12,7 +14,6 @@ high_eff <- read.table(high_eff_file, header = TRUE, sep = "\t",
                        stringsAsFactors = FALSE)
 gene_list <- gene_list[,4:9]
 # Split "effects" column for variants which effect multiple genes on ";"
-library(tidyverse)
 high_eff <- high_eff %>% separate(effect.s., c("eff1","eff2","eff3","eff4",NA), 
                                   sep = ";", fill = "right")
 # Replace empty strings resulting from tidyr separate with NA
@@ -62,7 +63,6 @@ high_eff_annot <- merge(gene_list, high_eff, by = "gene_ID", all.y = TRUE)
 high_eff_annot$flag <- paste(high_eff_annot$POS, high_eff_annot$REF, 
                              high_eff_annot$ALT, sep = "_")
 # Add column to quantify amount of support for a variant's gene identity
-library(tidyverse)
 high_eff_annot <- add_column(high_eff_annot, 
                              Support = rep(1, times = dim(high_eff_annot)[1]),
                              .after = "E_value")
@@ -102,7 +102,6 @@ high_eff_annot <- high_eff_annot[rows,]
 
 ## EXPORT COMBINED DATAFRAMES ##
 # Clean up data with tidyverse
-library(tidyverse)
 high_eff_annot <- relocate(high_eff_annot, "effect", .after = "protein_product")
 high_eff_annot <- arrange(high_eff_annot, desc(Support), desc(E_value))
 # Fix individual IDs in header

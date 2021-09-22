@@ -25,15 +25,15 @@ cd s-latissima-mutation-annotation
 I know for certain that sourcing the configuration file breaks without full paths if `sh` is used instead of `bash` - if you must use `sh` or another shell, be sure to give the output of `realpath mut_annot.config` as the first positional argument ($1) to the steps of the pipeline.
 
 #### Easy mode: Create Anaconda environment from provided YAML, and download latest SnpEff release as directory within your working directory
-1. If you haven't already, install the lastest version of [Anaconda](https://www.anaconda.com/)
+1. If you haven't already, install the lastest version of [Anaconda](https://www.anaconda.com/).
 ##### Note on Anaconda
 This pipeline will attempt to source Anaconda from the `$conda_sh` environment variable set in `mut_annot.config`. **Please set** `$conda_sh` to `path/to/<anaconda-version>/etc/profile.d/conda.sh` in `mut_annot.config`. If you are installing Anaconda for the first time, now would be a good time to find this path.
 
-2. Create Anaconda env from `mut_annot.yml`
+2. Create Anaconda env from `mut_annot.yml`.
 ```
 conda env create -f mut_annot.yml
 ```
-3. Download SnpEff to your working directory
+3. Download SnpEff to your working directory.
 ```
 wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
 unzip snpEff_latest_core.zip
@@ -51,7 +51,7 @@ export PATH=$PATH:/path/to/directory/containing/R
 ```
 If you are not comfortable doing this step, I suggest [Easy mode](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory)^^.
 
-2. Download SnpEff to your working directory
+2. Download SnpEff to your working directory.
 ```
 wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
 unzip snpEff_latest_core.zip

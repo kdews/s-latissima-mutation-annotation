@@ -29,7 +29,9 @@ else
 	if [[ -f $gene_list ]]
 	then
 		echo "Creating BED file $bed from ${gene_list}..."
-		awk '{print $1,$2,$3}' $gene_list > $bed
+		grep "#" $gene_list | awk '{print $1,$2,$3}' > $bed
+		grep -v "#" $gene_list | awk '{print $1,$2,$3}' | \
+sort -u >> $bed
 	else
 		echo "Error - no BED file ($bed) detected, and no gene list \
 ($gene_list) to create it from. Exiting... "

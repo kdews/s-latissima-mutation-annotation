@@ -6,13 +6,14 @@ args <- commandArgs(trailingOnly=TRUE)
 high_eff_file <- args[1]
 gene_list_file <- args[2]
 high_eff_annot_file <- args[3]
+bed_file <- args[4]
 
 ## MERGE DATAFRAMES ##
 gene_list <- read.table(gene_list_file, header = TRUE, sep = "\t",
                         stringsAsFactors = FALSE)
 high_eff <- read.table(high_eff_file, header = TRUE, sep = "\t", 
                        stringsAsFactors = FALSE)
-gene_list <- gene_list[,4:9]
+gene_list <- gene_list[,2:9]
 # Split "effects" column for variants which effect multiple genes on ";"
 high_eff <- high_eff %>% separate(effect.s., c("eff1","eff2","eff3","eff4",NA), 
                                   sep = ";", fill = "right")
@@ -100,7 +101,15 @@ for (row in 1:dim(females)[1])
 rows <- unlist(rows)
 high_eff_annot <- high_eff_annot[rows,]
 
-## EXPORT COMBINED DATAFRAMES ##
+## CREATE BED FILE OF REMAINING GENES ##
+bed <- paste(high_eff_annot$CHROM, high_eff_annot$Start, 
+             high_eff_annot$End, sep = "-")
+bed <- data.frame(bed = unique(bed))
+bed <- bed %>% separate(bed, c("#CHR","START","END"), sep = "-")
+
+## EXPORT TO FILES ##
+# Write BED file
+write.table(bed, bed_file, row.names = FALSE, quote = FALSE, sep = "\t")
 # Clean up data with tidyverse
 high_eff_annot <- relocate(high_eff_annot, "effect", .after = "protein_product")
 high_eff_annot <- arrange(high_eff_annot, desc(Support), desc(E_value))

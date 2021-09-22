@@ -13,8 +13,9 @@ cd s-latissima-mutation-annotation
 * [Java](https://openjdk.java.net) (>=v1.8) (also installed by default on many machines, but provided in YAML for the unlucky)
 * [vt](https://github.com/atks/vt) (Bioconda version 2015.11.10 or equivalent)
 * [SnpEff](https://pcingola.github.io/SnpEff) (v5.0c)
-* [R](https://www.r-project.org/) (v4.1.1)
-	* [tidyverse](https://www.tidyverse.org/) (v1.3.1)
+* [R](https://www.r-project.org) (v4.1.1)
+	* [tidyverse](https://www.tidyverse.org) (v1.3.1)
+* [bedtools](https://bedtools.readthedocs.io) (v2.30.0)
 ### Optional 
 * [SLURM](https://slurm.schedmd.com/download.html)
 > For submitting scripts with SLURM `sbatch`; can allow for higher memory and time allocations
@@ -111,6 +112,10 @@ bash/sbatch [options] high_eff_parse.sh [/path/to/mut_annot.config]
 Adds gene and annotation information to `high_eff.annot.tab`, and filters for variants present in at least one each male and female gametophyte.
 ```
 bash/sbatch [options] sterile_genotyping.sh [/path/to/mut_annot.config]
+```
+### 10. Manually validate variants of interest
+```
+bash/sbatch [options] validate_variants.sh [/path/to/mut_annot.config]
 ```
 
 ## Results

@@ -2,7 +2,7 @@
 #SBATCH -p cegs
 #SBATCH --mem=1gb
 #SBATCH --time=01:00:00
-#SBATCH -J sterile_genotyping.sh
+#SBATCH -J sterile_genotyping
 #SBATCH -o %x.log
 
 # Source configuration file
@@ -20,7 +20,7 @@ fi
 
 # Test R installation
 R --version
-[[ $? -ne 0]] && {echo "Error - check R installation. Exiting..."; exit 1}
+[[ $? -ne 0 ]] && { echo "Error - check R installation. Exiting..."; exit 1; }
 
 # Create R-friendly version of gene list
 if [[ -f $gene_list ]] && [[ -f $R_gene_list ]]
@@ -36,8 +36,8 @@ fi
 # Run Rscript
 echo "Running Rscript on $simple_summ and ${R_gene_list}..."
 Rscript --vanilla ${scripts_dir}sterile_genotyping.R $simple_summ $R_gene_list \
-$annot_summ
+$annot_summ $validate_bed
 
-[[ $? -eq 0 ]] && echo "Job completed. Find results in ${annot_summ}." || \
-echo "Error running Rscript. (Error code $?)."
+[[ $? -eq 0 ]] && echo "Job completed. Find results in $annot_summ and \
+${validate_bed}." || echo "Error running Rscript. (Error code $?)."
 

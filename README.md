@@ -11,7 +11,10 @@ cd s-latissima-mutation-annotation
 ## Dependencies
 * [bash](https://www.gnu.org/software/bash) shell (default on many machines; see [Note on shells](#note-on-shells))
 * [Java](https://openjdk.java.net) (>=v1.8) (also installed by default on many machines, but provided in YAML for the unlucky)
+* [vt](https://github.com/atks/vt) (Bioconda version 2015.11.10 or equivalent)
 * [SnpEff](https://pcingola.github.io/SnpEff) (v5.0c)
+* [R](https://www.r-project.org/) (v4.1.1)
+	* [tidyverse](https://www.tidyverse.org/) (v1.3.1)
 ### Optional 
 * [SLURM](https://slurm.schedmd.com/download.html)
 > For submitting scripts with SLURM `sbatch`; can allow for higher memory and time allocations
@@ -43,6 +46,8 @@ unzip snpEff_latest_core.zip
 ```
 export PATH=$PATH:/path/to/directory/containing/java
 export PATH=$PATH:/path/to/directory/containing/agat
+export PATH=$PATH:/path/to/vt
+export PATH=$PATH:/path/to/directory/containing/R
 ```
 If you are not comfortable doing this step, I suggest [Easy mode](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory)^^.
 
@@ -68,19 +73,54 @@ The entire pipeline can be run either with `bash` or with SLURM's `sbatch`. Each
 > Using SLURM to execute the pipeline is recommended, if possible, as some of these scripts can run for upwards of 10 hours and require memory allocations >8g.
 
 In the directory *containing* the `snpEff/` directory you [just downloaded](#easy-mode-create-anaconda-environment-from-provided-yaml-and-download-latest-snpeff-release-as-directory-within-your-working-directory) (i.e., the directory just *above* it), which would be `/path/to/s-latissima-mutation-annotation/`, if you are running from within the repository (recommended):
-### 1. Build SnpEff database for *S. latissima*
+### 1. Run vt to decompose VCF file 
+```
+bash/sbatch [options] decompose.sh [/path/to/mut_annot.config]
+```
+### 2. Build SnpEff database for *S. latissima*
 ```
 bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]
 ```
 This step uses the input *S. latissima* annotation file to correlate the transcript IDs in the CDS and protein FASTAs wih the annotation file. You can view the matrix extracted from the annotation file, `annotation_index.txt`, to inspect the relationship between IDs in the annotation file and the FASTAs.
 
-### 2. Run SnpEff variant annotation on *S. latissima* VCF
+### 3. Run SnpEff variant annotation on *S. latissima* VCF
 ```
 bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 ```
+### 4. Generate list of candidate genes to BLAST with
+```
+bash/sbatch [options] generate_candidates.sh [/path/to/mut_annot.config]
+```
+### 5. BLAST candidate translated genes against *S. latissima* protein FASTA
+```
+bash/sbatch [options] blast_candidates.sh [/path/to/mut_annot.config]
+```
+### 6. Parse "gene list" file from BLAST results (and any other sources)
+```
+bash/sbatch [options] gene_list_parse.sh [/path/to/mut_annot.config]
+```
+### 7. Extract variants in regions containing genes of interest
+```
+bash/sbatch [options] vcf_extract.sh [/path/to/mut_annot.config]
+```
+### 8. Extract only variants with high effects in regions of interest 
+```
+bash/sbatch [options] high_eff_parse.sh [/path/to/mut_annot.config]
+```
+### 9. Annotate and filter high effect varaint summary 
+Adds gene and annotation information to `high_eff.annot.tab`, and filters for variants present in at least one each male and female gametophyte.
+```
+bash/sbatch [options] sterile_genotyping.sh [/path/to/mut_annot.config]
+```
 
 ## Results
-Results of the analysis can be found in the `snpEff/` directory.
+### Summary of High Effect Variants
+```
+high_eff_annot.tab
+```
+Annotated summary of high effect variants and individuals affected.
+### SnpEff
+Results of this analysis can be found in the `snpEff` directory.
 #### SnpEff annotated VCF file
 ```
 <your_vcf_name>.ann.vcf

@@ -86,7 +86,8 @@ mv $cds_basename_unzip cds.fa; }
 # Fix IDs in protein and CDS FASTAs using GTF file (if needed)
 cd ../../..
 # Check if SLURM sbatch can be used for submission
-[[ $(which sbatch; echo $?) -eq 0 ]] && \
+sbatch --help
+[[ $(echo $?) -eq 0 ]] && \
 submit=sbatch || submit=bash
 num_prot=$(grep -c ">" snpEff/data/${genome_base}/protein.fa)
 num_cds=$(grep -c ">" snpEff/data/${genome_base}/cds.fa)

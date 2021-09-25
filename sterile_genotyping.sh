@@ -22,7 +22,7 @@ fi
 R --version
 [[ $? -ne 0 ]] && { echo "Error - check R installation. Exiting..."; exit 1; }
 
-# Create R-friendly version of gene list
+# Create R-friendly version of gene list before running Rscript
 if [[ -f $gene_list ]] && [[ -f $R_gene_list ]]
 then
 	echo "Found $R_gene_list"
@@ -36,8 +36,11 @@ fi
 # Run Rscript
 echo "Running Rscript on $simple_summ and ${R_gene_list}..."
 Rscript --vanilla ${scripts_dir}sterile_genotyping.R $simple_summ $R_gene_list \
-$annot_summ $validate_bed
+$annot_summ $validate_bed $indiv_file
 
-[[ $? -eq 0 ]] && echo "Job completed. Find results in $annot_summ and \
-${validate_bed}." || echo "Error running Rscript. (Error code $?)."
+[[ $? -eq 0 ]] && echo "Job completed. Find results in:
+$annot_summ
+$validate_bed
+$indiv_file" || \
+echo "Error running Rscript. (Error code $?)."
 

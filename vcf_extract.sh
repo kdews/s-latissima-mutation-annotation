@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p cegs
-#SBATCH --mem=25gb
-#SBATCH --time=2-0
+#SBATCH --mem=10mb
+#SBATCH --time=01:00:00
 #SBATCH -J vcf_extract
 #SBATCH -o %x.log
 

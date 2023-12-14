@@ -4,7 +4,7 @@ A pipeline to detect and annotate the effects of deleterious mutations in *S. la
 ## Installation
 Clone and enter repository:
 ```
-git clone https://github.com/kellywithsword/s-latissima-mutation-annotation.git
+git clone https://github.com/kdews/s-latissima-mutation-annotation.git
 cd s-latissima-mutation-annotation
 ```
 
@@ -139,11 +139,11 @@ HTML file with extensive summary of SnpEff annotations in your VCF file. Here ar
 
 1. Plot of variant frequency by region (relative to genes)
 
-![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/variant_type_freqs.png)
+![alt text](https://github.com/kdews/s-latissima-mutation-annotation/blob/main/images/variant_type_freqs.png)
 
 2. Summary of functional classes of all variants
 
-![alt text](https://github.com/kellywithsword/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
+![alt text](https://github.com/kdews/s-latissima-mutation-annotation/blob/main/images/functional_class.png)
 
 See the [documentation](https://pcingola.github.io/SnpEff/se_outputsummary/#html-summary-snpeff_summaryhtml) of the SnpEff summary HTLM for more information.
 #### SnpEff gene counts summary file

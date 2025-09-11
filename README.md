@@ -11,12 +11,12 @@ cd s-latissima-mutation-annotation
 ## Dependencies
 * [bash](https://www.gnu.org/software/bash) shell (default on many machines; see [Note on shells](#note-on-shells))
 * [Java](https://openjdk.java.net) (>=v1.8) (also installed by default on many machines, but provided in YAML for the unlucky)
-* [vt](https://github.com/atks/vt) (Bioconda version 2015.11.10 or equivalent)
+* [vt](https://github.com/atks/vt) (Bioconda channel version 2015.11.10 or equivalent)
 * [SnpEff](https://pcingola.github.io/SnpEff) (v5.0c)
 * [R](https://www.r-project.org) (v4.1.1)
 	* [tidyverse](https://www.tidyverse.org) (v1.3.1)
 * [bedtools](https://bedtools.readthedocs.io) (v2.30.0)
-### Optional 
+### Optional
 * [SLURM](https://slurm.schedmd.com/download.html)
 > For submitting scripts with SLURM `sbatch`; can allow for higher memory and time allocations
 * [AGAT](https://github.com/NBISweden/AGAT) (v0.8.0)
@@ -33,6 +33,7 @@ This pipeline will attempt to source Anaconda from the `$conda_sh` environment v
 2. Create Anaconda env from `mut_annot.yml`.
 ```
 conda env create -f mut_annot.yml
+mamba create -n mut_annot bedtools=2.30.0 vt=2015.11.10 r=4.1 r-tidyverse=1.3.1 openjdk
 ```
 3. Download SnpEff to your working directory.
 ```
@@ -40,7 +41,7 @@ wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
 unzip snpEff_latest_core.zip
 ```
 
-> @ Kelly: remember to add final mut\_annot.yml at end lol~
+> @ Kelly: remember to add final mut_annot.yml at end lol
 
 #### Hard mode: Install programs manually and add to $PATH, and download latest SnpEff release as directory within your working directory
 1. Install each dependency manually, and ensure that all programs (except SnpEff) have been added to your $PATH, e.g., running `which java` produces `/path/to/java`. 

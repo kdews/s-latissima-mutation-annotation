@@ -1,17 +1,68 @@
 #!/bin/bash
-#SBATCH -p cegs
-#SBATCH --mem=25gb
-#SBATCH --time=2-0
 #SBATCH -J build_SnpEff_db
-#SBATCH -o %x.log
+#SBATCH -o %x_logs/%x_%j.log
+#SBATCH -p epyc-64
+#SBATCH --time=2-0
+#SBATCH --mem=25gb
+
+# Script variables
+# Extract job name from script
+if [[ -z "${SLURM_JOB_NAME}" ]]
+then
+  job_name="$(basename "$0")"
+  job_name="${job_name%%.*}"
+else
+  job_name="$SLURM_JOB_NAME"
+fi
+scripts_dir="s-latissima-mutation-annotation/" # scripts directory
+# By default looks in scripts_dir then current directory for "mut_annot.config"
+config_def="mut_annot.config"
+
+# Help message
+show_help () {
+  echo "\
+Builds SnpEff database for a reference with given genome and annotation files.
+
+Usage: sbatch $job_name.sbatch [config_file]
+  config_file    (optional) provide config file if default config ($config_def)
+                 does not exist in either scripts_dir ($scripts_dir)
+                 or current directory ($pwd)
+  
+Output:
+  .
+  ├── <genome>.fasta      # unzipped reference genome FASTA
+  ├── <genome>.fasta.fai  # reference genome FAIDX index
+  ├── 
+  ├── 
+  └── xyz      # yadayada
+
+Requires:
+  - SnpEff (https://pcingola.github.io/SnpEff/)
+  - Java >=v21 (https://openjdk.java.net)"
+}
+if [[ $1 == "-h" || $1 == "--help" ]]
+then
+  show_help
+  exit 0
+fi
+
+# -e  exit on error
+# -o pipefail  catch errors in pipes
+set -eo pipefail
+
+# Print date and time
+date
+echo
 
 # Source configuration file
-[[ $1 ]] && config_file=$1 || config_file=mut_annot.config
-if [[ $config_file ]] && [[ -f $config_file ]]
+# If scripts_dir exists, look there first
+[[ -d "$scripts_dir" ]] && config_def="$scripts_dir/$config_def"
+config_file="${1:-"$config_def"}"
+if [[ -f "$config_file" ]]
 then
-	source $config_file
+	source "$config_file"
 else
-	echo "Error - please provide config file. $config_file not found."
+	echo "Error: Config file ($config_file) not found."
 	exit 1
 fi
 
@@ -20,18 +71,22 @@ if [[ -d snpEff ]]
 then
 	cd snpEff
 else
-	echo "Error - no snpEff directory detected."
+	echo "Error: no snpEff directory detected."
 	exit 1
 fi
-echo "Building SnpEff database in $(pwd)"
+echo "Building SnpEff database in: $(pwd)"
 
-# Optional: Anaconda configuration
-[[ $conda_sh ]] && source_conda $conda_sh
+# Load conda
+if [[ -f "$cond" ]]
+then
+  source "$cond"
+else
+  echo "Error on source of $cond"
+  exit 1
+fi
 
-# Test Java install (must be >= v1.8)
-java --version
-[[ $? -eq 0 ]] && echo "Java successfully loaded." || \
-{ echo "Error arose while testing Java install. Exiting..."; exit 1; }
+# Test Java install
+java --version || exit 1
 
 # Copy, unzip and rename all input files, as necessary
 # Create snpEff "data" directory by initiating random download (if needed)

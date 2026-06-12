@@ -17,6 +17,9 @@ fi
 scripts_dir="s-latissima-mutation-annotation/" # scripts directory
 # By default looks in scripts_dir then current directory for "mut_annot.config"
 config_def="mut_annot.config"
+# Set Java memory from Slurm resources, if available
+mem="${SLURM_MEM_PER_NODE:-"9638"}" # unit = MiB
+mem="$(( 85 * mem / 100 ))m" # only use 85% of available (default = 8GiB)
 
 # Help message
 show_help () {
@@ -71,9 +74,7 @@ fi
 [[ $conda_sh ]] && source_conda $conda_sh
 
 # Test Java install
-java --version
-[[ $? -eq 0 ]] && echo "Java successfully loaded." || \
-{ echo "Error arose while testing Java install. Exiting..."; exit 1; }
+java --version || exit 1
 
 # Set input VCF file
 input_vcf=../${vcf_base}.decomp.norm.vcf

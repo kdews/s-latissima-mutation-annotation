@@ -11,16 +11,17 @@ cd s-latissima-mutation-annotation
 ## Dependencies
 * [bash](https://www.gnu.org/software/bash) shell (default on many machines; see [Note on shells](#note-on-shells))
 * [Java](https://openjdk.java.net) (>=v21)
+* [wget](https://www.gnu.org/software/wget/) (tested with v1.19.5)
 * [UnZip](https://infozip.sourceforge.net/UnZip.html) (tested with v6.0)
 * [vt](https://github.com/atks/vt) (Bioconda channel version 2015.11.10 or equivalent)
-* [SnpEff](https://pcingola.github.io/SnpEff) (v5.0c)
+* [SnpEff](https://pcingola.github.io/SnpEff) (v5.4c)
 * [R](https://www.r-project.org) (v4.1.1)
 	* [tidyverse](https://www.tidyverse.org) (v1.3.1)
-* [bedtools](https://bedtools.readthedocs.io) (v2.30.0)
+* [bedtools](https://bedtools.readthedocs.io) (v2.31.1)
 ### Optional
 * [Slurm](https://slurm.schedmd.com/download.html)
 > For submitting scripts with Slurm `sbatch`
-* [AGAT](https://github.com/NBISweden/AGAT) (v0.8.0)
+* [AGAT](https://github.com/NBISweden/AGAT) (v1.7.0)
 > AGAT installation not required if annotation file is GTF
 
 ##### Note on shells
@@ -85,36 +86,36 @@ bash/sbatch [options] build_SnpEff_db.sh [/path/to/mut_annot.config]
 ```
 This step uses the input *S. latissima* annotation file to correlate the transcript IDs in the CDS and protein FASTAs wih the annotation file. You can view the matrix extracted from the annotation file, `annotation_index.txt`, to inspect the relationship between IDs in the annotation file and the FASTAs.
 
-### 3. Run SnpEff variant annotation on *S. latissima* VCF
+### 3. Run SnpEff variant annotation on *S. latissima* VCF ([ann_SnpEff.sh](ann_SnpEff.sh))
 ```
 bash/sbatch [options] ann_SnpEff.sh [/path/to/mut_annot.config]
 ```
-### 4. Generate list of candidate genes to BLAST with
+### 4. Generate list of candidate genes to BLAST with ([generate_candidates.sh](generate_candidates.sh))
 ```
 bash/sbatch [options] generate_candidates.sh [/path/to/mut_annot.config]
 ```
-### 5. BLAST candidate translated genes against *S. latissima* protein FASTA
+### 5. BLAST candidate translated genes against *S. latissima* protein FASTA ([blast_candidates.sh](blast_candidates.sh))
 ```
 bash/sbatch [options] blast_candidates.sh [/path/to/mut_annot.config]
 ```
-### 6. Parse "gene list" file from BLAST results (and any other sources)
+### 6. Parse "gene list" file from BLAST results (and any other sources) ([gene_list_parse.sh](gene_list_parse.sh))
 ```
 bash/sbatch [options] gene_list_parse.sh [/path/to/mut_annot.config]
 ```
-### 7. Extract variants in regions containing genes of interest
+### 7. Extract variants in regions containing genes of interest ([vcf_extract.sh](vcf_extract.sh))
 ```
 bash/sbatch [options] vcf_extract.sh [/path/to/mut_annot.config]
 ```
-### 8. Extract only variants with high effects in regions of interest 
+### 8. Extract only variants with high effects in regions of interest ([high_eff_parse.sh](high_eff_parse.sh))
 ```
 bash/sbatch [options] high_eff_parse.sh [/path/to/mut_annot.config]
 ```
-### 9. Annotate and filter high effect varaint summary 
+### 9. Annotate and filter high effect varaint summary ([sterile_genotyping.sh](sterile_genotyping.sh))
 Adds gene and annotation information to `high_eff.annot.tab`, and filters for variants present in at least one each male and female gametophyte.
 ```
 bash/sbatch [options] sterile_genotyping.sh [/path/to/mut_annot.config]
 ```
-### 10. Manually validate variants of interest
+### 10. Manually validate variants of interest ([validate_variants.sh](validate_variants.sh))
 ```
 bash/sbatch [options] validate_variants.sh [/path/to/mut_annot.config]
 ```

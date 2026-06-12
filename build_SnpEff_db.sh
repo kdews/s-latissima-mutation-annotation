@@ -17,6 +17,9 @@ fi
 scripts_dir="s-latissima-mutation-annotation/" # scripts directory
 # By default looks in scripts_dir then current directory for "mut_annot.config"
 config_def="mut_annot.config"
+# Set Java memory from Slurm resources, if available
+mem="${SLURM_MEM_PER_NODE:-"9638"}" # unit = MiB
+mem="$(( 85 * mem / 100 ))m" # only use 85% of available (default = 8GiB)
 
 # Help message
 show_help () {
@@ -45,10 +48,6 @@ then
   show_help
   exit 0
 fi
-
-# -e  exit on error
-# -o pipefail  catch errors in pipes
-set -eo pipefail
 
 # Print date and time
 date
@@ -87,56 +86,6 @@ fi
 
 # Test Java install
 java --version || exit 1
-
-# Copy, unzip and rename all input files, as necessary
-# Create snpEff "data" directory by initiating random download (if needed)
-[[ -d data ]] || java -jar snpEff.jar download -v GRCh37.75
-# Create directory for new genome and annotation files
-cd data
-[[ -d $genome_base ]] || mkdir $genome_base
-cd $genome_base
-# Copy genome FASTA, uncompress, rename to "sequences.fa" (if needed)
-[[ -f sequences.fa ]] || \
-{ echo "Copying $genome to sequences.fa"; \
-rsync $genome .; \
-gunzip $genome_basename; \
-mv $genome_basename_unzip sequences.fa; }
-# Copy annotation file, uncompress, and rename to "genes.gtf" (if needed)
-[[ -f genes.${annot_filetype} ]] || [[ -f genes.gtf ]] || \
-{ echo "Copying $annot to genes.${annot_filetype}"; \
-rsync $annot .; \
-gunzip $annot_basename; \
-mv $annot_basename_unzip genes.${annot_filetype}; }
-# Convert input GFF3 files to GTF3 (if provided)
-if [[ -f genes.gtf ]]
-then
-	echo "Using genes.gtf to build SnpEff database."
-elif [[ $annot_filetype = "gff3" ]]
-then
-	agat_convert_sp_gff2gtf.pl --gff genes.gff3 --output \
-genes.gtf > agat_convert_sp_gff2gtf.log 2>&1 
-	[[ $? -ne 0 ]] && { echo "Error on AGAT conversion step. \
-Exiting..."; exit 1; }
-	rm genes.gff3
-else
-	printf "%s\n" "\
-Error - annotation file format $annot cannot be handled. This script\n\
-only accepts GFF3 or GTF3 files as input.\n\n\
-REQUIRED: GFF3 files MUST end in '.gff3', not '.gff'. Sowwy :("
-	exit 1
-fi
-# Copy protein FASTA, uncompress, then rename to "protein.fa" (if needed)
-[[ -f protein.fa ]] || \
-{ echo "Copying $prot to protein.fa"; \
-rsync $prot .; \
-gunzip $prot_basename; \
-mv $prot_basename_unzip protein.fa; }
-# Copy CDS FASTA, uncompress, then rename to "cds.fa" (if needed)
-[[ -f cds.fa ]] || \
-{ echo "Copying $cds to cds.fa"; \
-rsync $cds .; \
-gunzip $cds_basename; \
-mv $cds_basename_unzip cds.fa; }
 
 # Fix IDs in protein and CDS FASTAs using GTF file (if needed)
 cd ../../..

@@ -6,7 +6,7 @@
 
 # Script variables
 # Extract job name from script
-if [[ -z "${SLURM_JOB_NAME}" ]]
+if [[ -z "$SLURM_JOB_NAME" ]]
 then
   job_name="$(basename "$0")"
   job_name="${job_name%%.*}"

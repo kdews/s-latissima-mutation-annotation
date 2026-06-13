@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH -p epyc-64
-#SBATCH -J copy_vcfs
+#SBATCH -J copy_data
 #SBATCH -o %x_logs/%x_%j.log
+#SBATCH -p epyc-64
 #SBATCH --mem=30g
 #SBATCH --time=03:00:00
 #SBATCH --cpus-per-task=12
 
 # Script variables
 # Extract job name from script
-if [[ -z "${SLURM_JOB_NAME}" ]]
+if [[ -z "$SLURM_JOB_NAME" ]]
 then
   job_name="$(basename "$0")"
   job_name="${job_name%%.*}"
@@ -22,20 +22,27 @@ config_def="mut_annot.config"
 # Help message
 show_help () {
   echo "\
-Copies input VCF and reference files annotation file (GFF3), protein FASTA,
-CDS FASTA to working directory.
+Copies and indexes input VCF, and copies and uncompresses reference genome FASTA,
+annotation file, protein FASTA, CDS FASTA to working directory.
 
-Usage: sbatch $job_name.sbatch
+Usage: sbatch $job_name.sbatch [config_file]
+  config_file    (optional) provide config file if default config ($config_def)
+                 does not exist in either scripts_dir ($scripts_dir)
+                 or current directory (./)
 
 Output:
   .
-  ├── $(basename "$vcf")                  # copied VCF file
-  ├── $(basename "$vcf").tbi              # copied VCF index
-  ├── $snpeff_db/                          # custom SnpEff database
-  ├── $(basename "$genome")               # copied reference genome FASTA
-  └── $(basename "$genome").fai           # copied reference genome FAIDX index
+  ├── <vcf>                             # local VCF copy
+  ├── <vcf>.tbi                         # local VCF index
+  └── ref_data/                         # reference data directory
+      ├── <genome>                      # uncompressed reference genome FASTA
+      ├── <annot>                       # uncompressed reference annotation file
+      ├── <protein>                     # uncompressed reference protein FASTA
+      └── <cds>                         # uncompressed reference CDS FASTA
 
-Requires: Samtools/BCFtools/HTSlib (https://www.htslib.org/)"
+Requires:
+  - BCFtools (https://www.htslib.org/)
+  - local install in ./ of SnpEff (https://pcingola.github.io/SnpEff/)"
 }
 if [[ $1 == "-h" || $1 == "--help" ]]
 then
@@ -43,30 +50,9 @@ then
   exit 0
 fi
 
-# -e  exit on error
-# -o pipefail  catch errors in pipes
-set -eo pipefail
-
 # Print date and time
 date
 echo
-
-# Load conda
-if [[ -f "$cond" ]]
-then
-  source "$cond"
-else
-  echo "Error on source of $cond"
-  exit 1
-fi
-
-# Multithread support
-if [[ -n "$SLURM_CPUS_PER_TASK" ]]
-then
-    nthrd="$SLURM_CPUS_PER_TASK"
-else
-    nthrd="1"
-fi
 
 # Source configuration file
 # If scripts_dir exists, look there first
@@ -80,53 +66,63 @@ else
 	exit 1
 fi
 
-# Copy, unzip and rename all input files
-
-# Copy VCF and VCF index
-rsync -a "$vcf" "$vcf_idx" .
-
-# Create directory for new genome and annotation files
-echo "Creating SnpEff database: $snpeff_db"
-mkdir -p "$snpeff_db"
-
-# Copy genome FASTA, uncompress, rename to "sequences.fa"
-echo "Copying $genome to sequences.fa"
-rsync -a "$genome" "$snpeff_db/"
-gunzip -c "$snpeff_db/$genome_basename" > "$snpeff_db/sequences.fa"
-# Copy annotation file, uncompress, and rename to "genes.gtf"
-echo "Copying $annot to genes.${annot_filetype}"
-rsync -a "$annot" "$snpeff_db/"
-gunzip -c "$snpeff_db/$annot_basename" > "$snpeff_db/genes.$annot_filetype"
-# Convert input GFF3 files to GTF3 (if provided)
-if [[ -f "$snpeff_db/genes.gtf" ]]
+# Load conda
+module purge
+if [[ -f "$cond" ]]
 then
-	echo "Using $snpeff_db/genes.gtf to build SnpEff database."
-elif [[ $annot_filetype = "gff3" ]]
-then
-  conda activate agat
-  set -x
-	agat_convert_sp_gff2gtf.pl \
-	  --gff "$snpeff_db/genes.gff3" \
-	  --output "$snpeff_db/genes.gtf" > \
-	  agat_convert_sp_gff2gtf.log 2>&1 
-  set +x
-	rm "$snpeff_db/genes.gff3"
-	conda deactivate
+  source "$cond"
 else
-	echo \
-"Error - annotation file format $annot cannot be handled. This script only
-accepts GFF3 or GTF3 files as input.
-REQUIRED: GFF3 files MUST end in '.gff3', not '.gff'. Sowwy :("
-	exit 1
+  echo "Error on source of $cond"
+  exit 1
 fi
-# Copy protein FASTA, uncompress, then rename to "protein.fa"
-echo "Copying $prot to protein.fa"
-rsync "$prot" "$snpeff_db/"
-gunzip -c "$snpeff_db/$prot_basename" > "$snpeff_db/protein.fa"
-# Copy CDS FASTA, uncompress, then rename to "cds.fa"
-echo "Copying $cds to cds.fa"
-rsync "$cds" "$snpeff_db/"
-gunzip "$snpeff_db/$cds_basename" > "$snpeff_db/cds.fa"
+
+# Load bcftools env
+conda activate bcftools
+
+# Copy and uncompress all input files
+
+# VCF
+rsync -ah "$vcf" .
+# Index VCF
+set -x
+bcftools index --tbi --threads "$nthrd" "$vcf_basename"
+sex +x
+
+# Reference genome FASTA
+echo "Copying and uncompressing $genome to ref_data/"
+if [[ "$genome" == *.gz ]]
+then
+  gunzip -c "$genome" > "ref_data/$genome_basename_unzip"
+else
+  rsync -ah "$genome" "ref_data/"
+fi
+
+# Annotation file
+echo "Copying and uncompressing $annot to ref_data/"
+if [[ "$annot" == *.gz ]]
+then
+  gunzip -c "$annot" > "ref_data/$annot_basename_unzip"
+else
+  rsync -ah "$annot" "ref_data/"
+fi
+
+# Protein FASTA
+echo "Copying and uncompressing $prot to ref_data/"
+if [[ "$prot" == *.gz ]]
+then
+  gunzip -c "$prot" > "ref_data/$prot_basename_unzip"
+else
+  rsync -ah "$prot" "ref_data/"
+fi
+
+# CDS FASTA
+echo "Copying and uncompressing $cds to ref_data/"
+if [[ "$cds" == *.gz ]]
+then
+  gunzip -c "$cds" > "ref_data/$cds_basename_unzip"
+else
+  rsync -ah "$cds" "ref_data/"
+fi
 
 # Done
 echo

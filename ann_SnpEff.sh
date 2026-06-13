@@ -7,7 +7,7 @@
 
 # Script variables
 # Extract job name from script
-if [[ -z "${SLURM_JOB_NAME}" ]]
+if [[ -z "$SLURM_JOB_NAME" ]]
 then
   job_name="$(basename "$0")"
   job_name="${job_name%%.*}"
@@ -26,18 +26,16 @@ show_help () {
   echo "\
 Runs SnpEff annotation with pre-built custom database.
 
-Usage: sbatch $job_name.sbatch [config_file]
+Usage: sbatch $job_name.sbatch[config_file]
   config_file    (optional) provide config file if default config ($config_def)
                  does not exist in either scripts_dir ($scripts_dir)
-                 or current directory ($pwd)
+                 or current directory (./)
   
 Output:
   .
-  ├── <genome>.fasta      # unzipped reference genome FASTA
-  ├── <genome>.fasta.fai  # reference genome FAIDX index
-  ├── 
-  ├── 
-  └── xyz      # yadayada
+  ├── <in_vcf>.ann.vcf         # SnpEff-annotated VCF
+  ├── snpEff_genes.txt         # SnpEff html
+  └── snpEff_summary.html      # SnpEff HTML
 
 Requires:
   - SnpEff (https://pcingola.github.io/SnpEff/)
@@ -48,10 +46,6 @@ then
   show_help
   exit 0
 fi
-
-# -e  exit on error
-# -o pipefail  catch errors in pipes
-set -eo pipefail
 
 # Print date and time
 date
@@ -69,28 +63,47 @@ else
 	exit 1
 fi
 
+# Load conda
+module purge
+if [[ -f "$cond" ]]
+then
+  source "$cond"
+else
+  echo "Error on source of $cond"
+  exit 1
+fi
 
-# Optional: Anaconda configuration
-[[ $conda_sh ]] && source_conda $conda_sh
+# Load SnpEff env
+conda activate snpeff
 
 # Test Java install
 java --version || exit 1
 
-# Set input VCF file
-input_vcf=../${vcf_base}.decomp.norm.vcf
+# Check for local SnpEff installation directory
+if [[ ! -d snpEff ]]
+then
+	echo "Error: no snpEff directory detected."
+	exit 1
+fi
 
-# Default Java memory=8g, unless memory is specified by SLURM
-[[ ${SLURM_MEM_PER_NODE} ]] && \
-mem="$(( 85 * $SLURM_MEM_PER_NODE / 100000 ))g" || \
-mem=8g
-echo "Java memory set to $mem"
+# Set input VCF file
+input_vcf="$vcf_base.decomp.norm.vcf"
+
 # Run SnpEff annotation
-cd snpEff
 if [[ -f $input_vcf ]]
 then
 	echo "Running SnpEff on $input_vcf using $genome_base database build..."
-	java -Xmx${mem} -jar snpEff.jar -v ${genome_base} $input_vcf > ${vcf_base}.ann.vcf
+	set -x
+	java -Xmx"$mem" -jar \
+	  snpEff/snpEff.jar ann -v \
+	  -c snpEff/snpEff.config \
+	  -dataDir snpEff/data \
+	  -stats snpEff_summary_$vcf_base.html \
+	  "$genome_base" \
+	  "$input_vcf" \
+	  > "$vcf_base.ann.vcf"
+	  set +x
 else
-	echo "Error - $input_vcf file not detected."
+	echo "Error: VCF file not detected: $input_vcf"
 	exit 1
 fi

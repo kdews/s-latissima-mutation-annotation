@@ -92,36 +92,52 @@ sex +x
 echo "Copying and uncompressing $genome to ref_data/"
 if [[ "$genome" == *.gz ]]
 then
+  set -x
   gunzip -c "$genome" > "ref_data/$genome_basename_unzip"
+  set +x
 else
+  set -x
   rsync -ah "$genome" "ref_data/"
+  set +x
 fi
 
 # Annotation file
 echo "Copying and uncompressing $annot to ref_data/"
 if [[ "$annot" == *.gz ]]
 then
+  set -x
   gunzip -c "$annot" > "ref_data/$annot_basename_unzip"
+  set +x
 else
+  set -x
   rsync -ah "$annot" "ref_data/"
+  set +x
 fi
 
 # Protein FASTA
 echo "Copying and uncompressing $prot to ref_data/"
 if [[ "$prot" == *.gz ]]
 then
+  set -x
   gunzip -c "$prot" > "ref_data/$prot_basename_unzip"
+  set +x
 else
+  set -x
   rsync -ah "$prot" "ref_data/"
+  set +x
 fi
 
 # CDS FASTA
 echo "Copying and uncompressing $cds to ref_data/"
 if [[ "$cds" == *.gz ]]
 then
+  set -x
   gunzip -c "$cds" > "ref_data/$cds_basename_unzip"
+  set +x
 else
+  set -x
   rsync -ah "$cds" "ref_data/"
+  set +x
 fi
 
 # Done

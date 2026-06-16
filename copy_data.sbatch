@@ -18,6 +18,29 @@ fi
 scripts_dir="s-latissima-mutation-annotation/" # scripts directory
 # By default looks in scripts_dir then current directory for "mut_annot.config"
 config_def="mut_annot.config"
+# Fuction to copy or uncompress input files to ref_data/ in working directory
+copy_or_uncompress() {
+  local src="$1" # source file
+  local dest_dir="$2" # destination directory
+  if [[ ! -e "$src" ]] # verify source exists
+  then
+    echo "Error: File not found: $src"
+    exit 1
+  fi
+  mkdir -p "$dest_dir" # create destination, if needed
+  echo "Copying and uncompressing $src to $dest_dir/"
+  src_basename_unzip="$(basename "$src" .gz)" # get unzipped file name
+  if [[ "$src" == *.gz ]]
+  then
+    set -x
+    gunzip -c "$src" > "$dest_dir/$src_basename_unzip"
+    set +x
+  else
+    set -x
+    rsync -ah "$src" "$dest_dir/"
+    set +x
+  fi
+}
 
 # Help message
 show_help () {
@@ -76,69 +99,45 @@ else
   exit 1
 fi
 
+# Multithread support
+if [[ -n "$SLURM_CPUS_PER_TASK" ]]
+then
+  nthrd="$SLURM_CPUS_PER_TASK"
+else
+  nthrd="1"
+fi
+
 # Load bcftools env
 conda activate bcftools
+bcftools --version || exit 1
+echo
 
 # Copy and uncompress all input files
 
 # VCF
-rsync -ah "$vcf" .
+if [[ -f "$vcf" ]]
+then
+  rsync -ah "$vcf" .
+else
+  echo "Error: VCF not found: $vcf"
+  exit 1
+fi
 # Index VCF
 set -x
-bcftools index --tbi --threads "$nthrd" "$vcf_basename"
-sex +x
+bcftools index -f --tbi --threads "$nthrd" "$vcf_basename"
+set +x
 
 # Reference genome FASTA
-echo "Copying and uncompressing $genome to ref_data/"
-if [[ "$genome" == *.gz ]]
-then
-  set -x
-  gunzip -c "$genome" > "ref_data/$genome_basename_unzip"
-  set +x
-else
-  set -x
-  rsync -ah "$genome" "ref_data/"
-  set +x
-fi
+copy_or_uncompress "$genome" "ref_data/"
 
 # Annotation file
-echo "Copying and uncompressing $annot to ref_data/"
-if [[ "$annot" == *.gz ]]
-then
-  set -x
-  gunzip -c "$annot" > "ref_data/$annot_basename_unzip"
-  set +x
-else
-  set -x
-  rsync -ah "$annot" "ref_data/"
-  set +x
-fi
+copy_or_uncompress "$annot" "ref_data/"
 
 # Protein FASTA
-echo "Copying and uncompressing $prot to ref_data/"
-if [[ "$prot" == *.gz ]]
-then
-  set -x
-  gunzip -c "$prot" > "ref_data/$prot_basename_unzip"
-  set +x
-else
-  set -x
-  rsync -ah "$prot" "ref_data/"
-  set +x
-fi
+copy_or_uncompress "$prot" "ref_data/"
 
 # CDS FASTA
-echo "Copying and uncompressing $cds to ref_data/"
-if [[ "$cds" == *.gz ]]
-then
-  set -x
-  gunzip -c "$cds" > "ref_data/$cds_basename_unzip"
-  set +x
-else
-  set -x
-  rsync -ah "$cds" "ref_data/"
-  set +x
-fi
+copy_or_uncompress "$cds" "ref_data/"
 
 # Done
 echo

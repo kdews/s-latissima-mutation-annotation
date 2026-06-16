@@ -2,8 +2,8 @@
 #SBATCH -J build_SnpEff_db
 #SBATCH -o %x_logs/%x_%j.log
 #SBATCH -p epyc-64
-#SBATCH --time=2-0
 #SBATCH --mem=25gb
+#SBATCH --time=10:00:00
 
 # Script variables
 # Extract job name from script
@@ -101,11 +101,11 @@ echo
 
 # Copy genome to "sequences.fa"
 echo "Copying ref_data/$genome_basename_unzip to sequences.fa"
-cp "ref_data/$genome_basename_unzip" "$snpeff_db/sequences.fa"
+rsync -ahc "ref_data/$genome_basename_unzip" "$snpeff_db/sequences.fa"
 
 # Copy annotation file and rename to "genes.$annot_filetype"
 echo "Copying ref_data/$annot_basename_zip to genes.$annot_filetype"
-cp "ref_data/$annot_basename_zip" "$snpeff_db/genes.$annot_filetype"
+rsync -ahc "ref_data/$annot_basename_unzip" "$snpeff_db/genes.$annot_filetype"
 
 # # Convert input GFF3 files to GTF3 (if provided)
 # if [[ -f "$snpeff_db/genes.gtf" ]]
@@ -113,12 +113,15 @@ cp "ref_data/$annot_basename_zip" "$snpeff_db/genes.$annot_filetype"
 # 	echo "Using $snpeff_db/genes.gtf to build SnpEff database."
 # elif [[ "$annot_filetype" == "gff3" ]]
 # then
+#   # Load agat env
 #   conda activate agat
+#   agat --version || exit 1
 #   set -x
-# 	agat_convert_sp_gff2gtf.pl \
-# 	  --gff "$snpeff_db/genes.gff3" \
-# 	  --output "$snpeff_db/genes.gtf" > \
-# 	  agat_convert_sp_gff2gtf.log 2>&1
+#	agat_convert_sp_gff2gtf.pl \
+#	  --gff "$snpeff_db/genes.gff3" \
+#	  --gtf_version 3 \
+#	  --output "$snpeff_db/genes.gtf" > \
+#	  agat_convert_sp_gff2gtf.log 2>&1
 #   set +x
 # 	rm "$snpeff_db/genes.gff3"
 # 	conda deactivate
@@ -133,53 +136,64 @@ cp "ref_data/$annot_basename_zip" "$snpeff_db/genes.$annot_filetype"
 
 # Copy protein FASTA to "protein.fa"
 echo "Copying ref_data/$prot_basename_unzip to protein.fa"
-cp "ref_data/$prot_basename_unzip" "$snpeff_db/protein.fa"
+rsync -ahc "ref_data/$prot_basename_unzip" "$snpeff_db/protein.fa"
 
 # Copy CDS FASTA to "cds.fa"
 echo "Copying ref_data/$cds_basename_unzip to cds.fa"
-cp "ref_data/$cds_basename_unzip" "$snpeff_db/cds.fa"
+rsync -ahc "ref_data/$cds_basename_unzip" "$snpeff_db/cds.fa"
 
 # Fix IDs in protein and CDS FASTAs using GTF file (if needed)
-# Check if SLURM sbatch can be used for submission
-sbatch --help
-[[ $(echo $?) -eq 0 ]] && \
-submit=sbatch || submit=bash
-num_prot=$(grep -c ">" "snpEff/data/$genome_base/protein.fa")
-num_cds=$(grep -c ">" "snpEff/data/$genome_base/cds.fa")
-[[ $num_prot -eq \
-$(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
-[[ $num_cds -eq \
-$(grep -c ">mRNA" snpEff/data/${genome_base}/cds.fa) ]] &&
-echo "FASTA IDs already fixed." || \
-$submit ${scripts_dir}fix_ids.sh $genome_base
-until [[ $num_prot -eq \
-$(grep -c ">mRNA" snpEff/data/${genome_base}/protein.fa) ]] && \
-[[ $num_cds -eq \
-$(grep -c ">mRNA" snpEff/data/${genome_base}/cds.fa) ]]
-do
-	echo "Waiting for fix_ids step to complete."
-	date
-	printf "%s\n" "Progress:\nprotein.fa - %s\ncds.fa - %s\n"
-"$(grep -c '>mRNA' snpEff/data/${genome_base}/protein.fa) / $num_prot"
-"$(grep -c '>mRNA' snpEff/data/${genome_base}/cds.fa) / $num_cds"
-	sleep 3600
-done
+sbatch --version && submit="sbatch" || submit="bash" # check for sbatch
+num_prot_ids="$(grep -c ">" "$snpeff_db/protein.fa")" # protein IDs
+num_cds_ids="$(grep -c ">" "$snpeff_db/cds.fa")" # CDS IDs
+# Function to count fixed IDs
+count_corr() {
+  grep -c ">mRNA" "$1"
+}
+# Run based on count of corrected IDs in protein and CDS FASTAs
+if [[ "$num_prot_ids" -eq "$(count_corr "$snpeff_db/protein.fa")" ]] \
+  && [[ "$num_cds_ids" -eq "$(count_corr "$snpeff_db/cds.fa")" ]]
+then
+  echo "FASTA IDs already fixed."
+else
+  if "$submit" "${scripts_dir}fix_ids.sh" "$genome_base"
+  then
+    echo "Waiting for fix_ids step to complete..."
+    echo "Progress:"
+    until [[ "$num_prot_ids" -eq "$(count_corr "$snpeff_db/protein.fa")" ]] \
+      && [[ "$num_cds_ids" -eq "$(count_corr "$snpeff_db/cds.fa")" ]]
+    do
+      date
+      # Progress meter
+      printf "protein.fa: %s\ncds.fa: %s\n\n" \
+        "$(count_corr "$snpeff_db/protein.fa") / $num_prot_ids" \
+        "$(count_corr "$snpeff_db/cds.fa") / $num_cds_ids"
+  	  sleep 3600
+    done
+  else
+    echo "Error: Could not submit job."
+    exit 1
+  fi
+fi
 echo
 
 # Add genome to "Non-standard Databases" section of snpEff.config file
 # Retrieve line number of section header
-line_num=$(grep -n "Non-standard Databases" snpEff/snpEff.config | cut -d : -f 1)
-line_num=$(( $line_num + 2 ))
+line_num="$(grep -n "Non-standard Databases" snpEff/snpEff.config | cut -d: -f1)"
+line_num="$(( line_num + 2 ))"
 if grep -q "$species" snpEff/snpEff.config
 then
+  echo "$species found in SnpEff config (snpEff/snpEff.config)."
+else
   echo "Adding $species to SnpEff config (snpEff/snpEff.config)..."
   set -x
   sed -i \
-    "$line_num a # $species genome, $genome_info\n${genome_base}.genome : ${species}\n" \
+    "$line_num a # $species genome, $genome_info\n$genome_base.genome : $species\n" \
     snpEff/snpEff.config
   set +x
 fi
 echo
+grep -A1 "$species" snpEff/snpEff.config
 
 # Build SnpEff database for species genome (if it doesn't exist)
 if [[ -f "$snpeff_db/$genome_base.build" ]]
@@ -194,8 +208,8 @@ then
     -c snpEff/snpEff.config \
     -dataDir snpEff/data \
     -gff3 \
-    "$genome_base" \
-    2>&1 | "tee $genome_base.build"
+    "$genome_base" 2>&1 \
+    | tee "$genome_base.build"
   set +x
 fi
 

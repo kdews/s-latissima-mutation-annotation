@@ -98,7 +98,7 @@ then
 	  snpEff/snpEff.jar ann -v \
 	  -c snpEff/snpEff.config \
 	  -dataDir snpEff/data \
-	  -stats snpEff_summary_$vcf_base.html \
+	  -stats "snpEff_summary_$vcf_base.html" \
 	  "$genome_base" \
 	  "$input_vcf" \
 	  > "$vcf_base.ann.vcf"

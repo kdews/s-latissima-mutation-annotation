@@ -157,5 +157,5 @@ Tab-delimited text file with counts of number of variants affecting each transcr
 ## Debugging & Troubleshooting
 The output at each step of the pipeline can be saved to a log file by specifying one to Slurm `sbatch -o out.log <script>` or by directing the output to a file (if running with `bash`), like so: `bash <script> > out.log`.
 
-You can use these logs to debug any errors you receive running the pipeline, or email me at kdeweese@usc.edu.
+You can use these logs to debug any errors you receive running the pipeline, or open an issue.
 
